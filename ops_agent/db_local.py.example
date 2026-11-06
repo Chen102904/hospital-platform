@@ -1,0 +1,9 @@
+# -*- coding: utf-8 -*-
+# 复制这个文件，改名为 db_local.py，把 password 换成你自己的 MySQL 密码。
+# db_local.py 已被 .gitignore 排除，不会提交到仓库。
+#
+# 只需要写要覆盖的字段，其余走 db_conf.py 里的默认值。
+
+DB = {
+    "password": "",     # ← 填你自己的 MySQL root 密码
+}

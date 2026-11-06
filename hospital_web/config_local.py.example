@@ -1,0 +1,16 @@
+# 复制这个文件，改名为 config_local.py，填上你本机的 MySQL 密码。
+# config_local.py 已被 .gitignore 排除，不会提交到仓库。
+#
+# 只需要写要覆盖的字段，其余（host/port/user/database）走 config.py 里的默认值。
+
+DB_CONFIG = {
+    "password": "",     # ← 填你自己的 MySQL root 密码
+}
+
+# 也可以改别的字段，比如 MySQL 不在本机：
+#     "host": "192.168.1.20",
+#     "user": "his_web",
+#
+# 不想建这个文件也行，用环境变量（优先级低于本文件）：
+#     $env:DB_PASSWORD="你的密码"      (Windows PowerShell)
+#     export DB_PASSWORD=你的密码       (macOS / Linux)

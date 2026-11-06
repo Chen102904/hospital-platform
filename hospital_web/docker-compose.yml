@@ -2,13 +2,18 @@
 # 用法：docker compose up --build
 # 首次启动会自动：建库建表 → 灌演示数据 → 起 Flask
 # 访问：http://localhost:5000  账号 admin / admin123
+#
+# 数据库密码不写在文件里（这个仓库是公开的）：
+#   - 不设变量 → 用下面的开发用占位值 his_dev_only
+#   - 想用自己的 → 复制 .env.example 为 .env，改 MYSQL_ROOT_PASSWORD
+#     （.env 已被 .gitignore 排除）
 services:
   mysql:
     image: mysql:8.0
     container_name: his_mysql
     restart: unless-stopped
     environment:
-      MYSQL_ROOT_PASSWORD: his_dev_only
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-his_dev_only}
       MYSQL_DATABASE: hospital_db
       TZ: Asia/Shanghai
     command: --default-authentication-plugin=mysql_native_password --character-set-server=utf8mb4 --collation-server=utf8mb4_general_ci
@@ -19,7 +24,7 @@ services:
       # 首次启动自动执行：建 15 张表 → 灌演示数据（顺序按文件名）
       - ./docker/init:/docker-entrypoint-initdb.d:ro
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-phis_dev_only"]
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-p${MYSQL_ROOT_PASSWORD:-his_dev_only}"]
       interval: 5s
       timeout: 5s
       retries: 20
@@ -35,7 +40,7 @@ services:
       DB_HOST: mysql
       DB_PORT: "3306"
       DB_USER: root
-      DB_PASSWORD: his_dev_only
+      DB_PASSWORD: ${MYSQL_ROOT_PASSWORD:-his_dev_only}
       DB_NAME: hospital_db
       TZ: Asia/Shanghai
     ports:

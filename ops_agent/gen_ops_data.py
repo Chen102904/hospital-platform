@@ -14,11 +14,10 @@ from datetime import date, timedelta
 
 import pymysql
 
+from db_conf import DB
+
 SEED = 20261106
 random.seed(SEED)          # 固定随机流，保证任何人重跑得到同一份数据
-
-DB = dict(host="127.0.0.1", user="root", password="his_dev_only",
-          charset="utf8mb4", database="hospital_ops")
 
 START = date(2025, 11, 1)
 END = date(2026, 10, 31)

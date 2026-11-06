@@ -7,6 +7,8 @@ from matplotlib import font_manager
 import os
 import pymysql
 
+from db_conf import DB
+
 for p in [r"C:\Windows\Fonts\msyh.ttc", r"C:\Windows\Fonts\simhei.ttf"]:
     if os.path.exists(p):
         font_manager.fontManager.addfont(p)
@@ -15,8 +17,6 @@ for p in [r"C:\Windows\Fonts\msyh.ttc", r"C:\Windows\Fonts\simhei.ttf"]:
 plt.rcParams["axes.unicode_minus"] = False
 
 C = {"主": "#0F6E56", "次": "#9FD8C0", "警": "#C0392B", "灰": "#8a8a8a"}
-DB = dict(host="127.0.0.1", user="root", password="his_dev_only",
-          database="hospital_ops", charset="utf8mb4")
 
 
 def q(sql, args=None):

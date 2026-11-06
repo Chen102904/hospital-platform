@@ -25,8 +25,7 @@ from typing import Any
 
 import pymysql
 
-DB = dict(host="127.0.0.1", user="root", password="his_dev_only",
-          charset="utf8mb4", database="hospital_ops")
+from db_conf import DB
 
 CANCEL = ("已取消", "已退费")
 

@@ -57,10 +57,13 @@ cd hospital_web
 docker compose up
 ```
 
+容器里的数据库密码走环境变量，默认 `his_dev_only`（仅供本地开发）。要用自己的密码就复制 `.env.example` 为 `.env` 改一行。
+
 ### 跑运营归因 Agent
 
 ```bash
 cd ops_agent
+cp db_local.py.example db_local.py   # 填上本机 MySQL 密码（该文件已被 .gitignore 排除）
 python gen_ops_data.py        # 造 12 个月数据（重建 hospital_ops 库）
 python ops_agent.py 2026-07   # 查单月，规则决策
 python eval_agent.py          # 12 个月评测 + 单轮对照
@@ -98,4 +101,4 @@ mysql -u root -p < 03_queries.sql      # 39 条查询
 1. **演示数据**。数据库里的患者、医生姓名都是生成的，不含任何真实个人信息。
 2. `ops_agent` 的 12 个月运营数据是按业务模型模拟的（固定随机种子），价值在于「答案已知」——能算出检出率，而不是只能看「像不像」。
 3. `ai_lab` 的问答入口是自建编排，没用 LangChain / 向量数据库，检索是手写余弦相似度。规模上去了要换 ANN 索引。
-4. 本仓库不含任何密钥。`mykey.py`、`db_ro.py`、`config_local.py` 都在 `.gitignore` 里，参考各自的 `.example` 文件。
+4. 本仓库不含任何密钥。`config_local.py`、`db_local.py`、`.env`、`mykey.py`、`db_ro.py` 全部在 `.gitignore` 里，每个都有对应的 `.example` 模板，复制改名填密码即可。
