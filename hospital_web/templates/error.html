@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %}{{ title }} | 医院信息管理系统{% endblock %}
+
+{% block content %}
+<div class="card error-card">
+  <div class="error-code">{{ code }}</div>
+  <h2>{{ title }}</h2>
+  <p class="error-msg">{{ msg }}</p>
+  <div class="form-actions">
+    <a class="btn" href="{{ url_for('home') }}">回到首页</a>
+    <a class="btn-plain" href="javascript:history.back()">返回上一页</a>
+  </div>
+</div>
+{% endblock %}

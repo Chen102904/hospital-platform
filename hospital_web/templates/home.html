@@ -1,0 +1,250 @@
+{% extends "base.html" %}
+{% block title %}首页 | 医院信息管理系统{% endblock %}
+
+{% block content %}
+
+<div class="hero">
+  <div class="hero-text">
+    <h1>医院信息管理系统</h1>
+    <p>挂号 · 接诊开方 · 收费结算 · 药房发药 · 住院登记 · 药品库存 一体化管理</p>
+    <p class="hero-sub">个人项目演示 · 数据库设计 + Web 前端 · MySQL + Flask</p>
+  </div>
+  <div class="hero-actions">
+    {% if can('reg.add') %}
+    <a class="btn btn-light" href="{{ url_for('add') }}">＋ 新增挂号</a>
+    {% endif %}
+    {% if can('charge.view') %}
+    <a class="btn btn-ghost" href="{{ url_for('charges') }}">收费管理</a>
+    {% else %}
+    <a class="btn btn-ghost" href="{{ url_for('registrations') }}">挂号管理</a>
+    {% endif %}
+  </div>
+</div>
+
+<div class="stats">
+  <div class="stat">
+    <div class="label">今日挂号</div>
+    <div class="value">{{ counts.today_reg }}</div>
+  </div>
+  <div class="stat">
+    <div class="label">待就诊</div>
+    <div class="value value-warn">{{ counts.waiting }}</div>
+  </div>
+  <div class="stat">
+    <div class="label">待收费</div>
+    <div class="value value-warn">{{ counts.to_charge }}</div>
+  </div>
+  <div class="stat">
+    <div class="label">待发药</div>
+    <div class="value value-warn">{{ counts.to_dispense }}</div>
+  </div>
+
+  <div class="stat">
+    <div class="label">在院人数</div>
+    <div class="value">{{ counts.in_ward }}</div>
+  </div>
+  <div class="stat">
+    <div class="label">今日入院</div>
+    <div class="value">{{ counts.today_admit }}</div>
+  </div>
+  <div class="stat">
+    <div class="label">今日出院</div>
+    <div class="value">{{ counts.today_discharge }}</div>
+  </div>
+  <div class="stat">
+    <div class="label">累计住院</div>
+    <div class="value">{{ counts.adm_count }}</div>
+  </div>
+
+  <div class="stat">
+    <div class="label">今日收入</div>
+    <div class="value">￥{{ '%.2f'|format(counts.today_income) }}</div>
+  </div>
+  <div class="stat">
+    <div class="label">今日出诊班次</div>
+    <div class="value">{{ counts.today_sched }}</div>
+  </div>
+  <div class="stat">
+    <div class="label">建档患者</div>
+    <div class="value">{{ counts.patient_count }}</div>
+  </div>
+  <div class="stat">
+    <div class="label">库存预警</div>
+    <div class="value {% if counts.low_stock %}value-warn{% endif %}">{{ counts.low_stock }}</div>
+  </div>
+</div>
+
+<h2 class="section-title">功能入口</h2>
+
+<div class="tiles">
+  <a class="tile" href="{{ url_for('registrations') }}">
+    <div class="tile-icon">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+           stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="3" y="4" width="18" height="17" rx="2"/><path d="M8 2v4M16 2v4M3 10h18"/>
+        <path d="M9 15h6M12 12v6"/>
+      </svg>
+    </div>
+    <div class="tile-body">
+      <div class="tile-title">挂号管理</div>
+      <div class="tile-desc">按科室、状态、初诊/复诊筛选；接诊开方、收费、取消挂号</div>
+    </div>
+  </a>
+
+  {% if can('charge.view') %}
+  <a class="tile" href="{{ url_for('charges') }}">
+    <div class="tile-icon">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+           stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="2.5" y="6" width="19" height="13" rx="2"/><path d="M2.5 10.5h19"/>
+        <path d="M6 15h4"/>
+      </svg>
+    </div>
+    <div class="tile-body">
+      <div class="tile-title">收费管理</div>
+      <div class="tile-desc">挂号费 + 药费一次性结算，支持退费并把药品退回库存</div>
+    </div>
+  </a>
+  {% endif %}
+
+  {% if can('reg.add') %}
+  <a class="tile" href="{{ url_for('add') }}">
+    <div class="tile-icon">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+           stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/>
+      </svg>
+    </div>
+    <div class="tile-body">
+      <div class="tile-title">新增挂号</div>
+      <div class="tile-desc">按排班号源挂号，科室与医生联动，支持现场建档</div>
+    </div>
+  </a>
+  {% endif %}
+
+  {% if can('queue.view') %}
+  <a class="tile" href="{{ url_for('queue') }}">
+    <div class="tile-icon">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+           stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/><path d="M3.2 9h2M18.8 9h2"/>
+      </svg>
+    </div>
+    <div class="tile-body">
+      <div class="tile-title">候诊叫号</div>
+      <div class="tile-desc">按医生看当日候诊队列，依次叫号并进入接诊</div>
+    </div>
+  </a>
+  {% endif %}
+
+  {% if can('schedule.view') %}
+  <a class="tile" href="{{ url_for('schedules') }}">
+    <div class="tile-icon">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+           stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="3" y="4" width="18" height="17" rx="2"/><path d="M8 2v4M16 2v4M3 10h18"/>
+        <path d="M7 14h4M7 17.5h7"/>
+      </svg>
+    </div>
+    <div class="tile-body">
+      <div class="tile-title">排班号源</div>
+      <div class="tile-desc">医生按天放号，号源余量一目了然，支持停诊与调整</div>
+    </div>
+  </a>
+  {% endif %}
+
+  {% if can('patient.view') %}
+  <a class="tile" href="{{ url_for('patients') }}">
+    <div class="tile-icon">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+           stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="9" cy="8" r="3.2"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/>
+        <path d="M17 11h4M19 9v4"/>
+      </svg>
+    </div>
+    <div class="tile-body">
+      <div class="tile-title">患者管理</div>
+      <div class="tile-desc">患者档案、联系方式（脱敏）、历次挂号与病历；支持改档</div>
+    </div>
+  </a>
+  {% endif %}
+
+  {% if can('admission.view') %}
+  <a class="tile" href="{{ url_for('admissions') }}">
+    <div class="tile-icon">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+           stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M3 21V9l9-6 9 6v12"/><path d="M9 21v-6h6v6"/><path d="M12 8.5v3M10.5 10h3"/>
+      </svg>
+    </div>
+    <div class="tile-body">
+      <div class="tile-title">住院管理</div>
+      <div class="tile-desc">办理入院与出院、在院患者一览、床位与住院史留痕</div>
+    </div>
+  </a>
+  {% endif %}
+
+  {% if can('dispense.view') %}
+  <a class="tile" href="{{ url_for('dispenses') }}">
+    <div class="tile-icon">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+           stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M5 3h9l5 5v13a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/>
+        <path d="M13 3v6h6"/><path d="M8.5 14h5M11 11.5v5"/>
+      </svg>
+    </div>
+    <div class="tile-body">
+      <div class="tile-title">药房发药</div>
+      <div class="tile-desc">收费后由药师核对处方发药，退费时自动退回药品</div>
+    </div>
+  </a>
+  {% endif %}
+
+  {% if can('medicine.view') %}
+  <a class="tile" href="{{ url_for('medicines') }}">
+    <div class="tile-icon">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+           stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="3" y="8" width="18" height="8" rx="4"/>
+        <path d="M12 8v8"/><path d="M7 12h1M16 12h1"/>
+      </svg>
+    </div>
+    <div class="tile-body">
+      <div class="tile-title">药品管理</div>
+      <div class="tile-desc">药品目录、库存分级预警、入库出库操作</div>
+    </div>
+  </a>
+  {% endif %}
+
+  {% if can('stocklog.view') %}
+  <a class="tile" href="{{ url_for('stock_logs') }}">
+    <div class="tile-icon">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+           stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/><path d="M12 8v4l3 2"/>
+      </svg>
+    </div>
+    <div class="tile-body">
+      <div class="tile-title">库存流水</div>
+      <div class="tile-desc">每一次出入库都有记录，变动前后库存可追溯</div>
+    </div>
+  </a>
+  {% endif %}
+
+  {% if can('dashboard.view') %}
+  <a class="tile" href="{{ url_for('dashboard') }}">
+    <div class="tile-icon">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+           stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M3 20h18"/><path d="M6 20V11M11 20V5M16 20v-6M21 20V9"/>
+      </svg>
+    </div>
+    <div class="tile-body">
+      <div class="tile-title">数据概览</div>
+      <div class="tile-desc">科室挂号量、状态分布、医生接诊排行、库存预警</div>
+    </div>
+  </a>
+  {% endif %}
+</div>
+
+{% endblock %}

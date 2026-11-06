@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% block title %}库存流水 | 医院信息管理系统{% endblock %}
+
+{% block content %}
+<h1 class="page-title">库存流水</h1>
+
+<div class="toolbar">
+  <form class="search-form" method="get" action="{{ url_for('stock_logs') }}">
+    <select name="medicine_id">
+      <option value="">全部药品</option>
+      {% for m in meds %}
+        <option value="{{ m.medicine_id }}"
+                {% if current_medicine == m.medicine_id %}selected{% endif %}>{{ m.medicine_name }}</option>
+      {% endfor %}
+    </select>
+    <select name="change_type">
+      <option value="">全部类型</option>
+      <option value="入库" {% if current_type == '入库' %}selected{% endif %}>入库</option>
+      <option value="出库" {% if current_type == '出库' %}selected{% endif %}>出库</option>
+    </select>
+    <button class="btn" type="submit">筛选</button>
+    {% if current_medicine or current_type %}
+      <a class="btn-plain" href="{{ url_for('stock_logs') }}">重置</a>
+    {% endif %}
+  </form>
+  <div class="auto-refresh"></div>
+  <div class="count-info">
+    共 <b>{{ total }}</b> 条流水，第 {{ page }} / {{ total_pages }} 页
+  </div>
+</div>
+
+<div class="card">
+  {% if rows %}
+  <table>
+    <thead>
+      <tr>
+        <th>时间</th><th>药品</th><th>类型</th><th>数量</th>
+        <th>变动前</th><th>变动后</th><th>原因</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for r in rows %}
+      <tr>
+        <td>{{ r.create_time.strftime('%Y-%m-%d %H:%M') if r.create_time else '—' }}</td>
+        <td>
+          <a class="link" href="{{ url_for('medicines', kw=r.medicine_name) }}">{{ r.medicine_name }}</a>
+          <span class="sub">{{ r.spec or '' }}</span>
+        </td>
+        <td>
+          <span class="tag {% if r.change_type == '入库' %}tag-ok{% else %}tag-cancel{% endif %}">
+            {{ r.change_type }}
+          </span>
+        </td>
+        <td class="mono">{% if r.change_type == '入库' %}+{% else %}-{% endif %}{{ r.quantity }} {{ r.unit or '' }}</td>
+        <td class="sub">{{ r.before_stock }}</td>
+        <td><b>{{ r.after_stock }}</b></td>
+        <td class="sub">{{ r.reason or '' }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+    <div class="empty">暂无库存流水记录</div>
+  {% endif %}
+</div>
+
+{% if total_pages > 1 %}
+<div class="pager">
+  {% for p, url in pager %}
+    <a class="btn-plain {% if p == page %}active{% endif %}" href="{{ url }}">{{ p }}</a>
+  {% endfor %}
+</div>
+{% endif %}
+{% endblock %}

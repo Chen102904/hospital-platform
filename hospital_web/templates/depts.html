@@ -1,0 +1,120 @@
+{% extends "base.html" %}
+{% block title %}科室管理 | 医院信息管理系统{% endblock %}
+
+{% block content %}
+<h1 class="page-title">科室管理
+  <span class="page-sub">挂号与住院的科室来源。停用的科室不再出现在新增挂号的下拉里，历史记录照常保留</span>
+</h1>
+
+<div class="stats">
+  <div class="stat"><div class="label">科室总数</div><div class="value">{{ summary.total }}</div></div>
+  <div class="stat"><div class="label">启用中</div><div class="value">{{ summary.on }}</div></div>
+  <div class="stat">
+    <div class="label">已停用</div>
+    <div class="value {% if summary.off %}value-warn{% endif %}">{{ summary.off }}</div>
+  </div>
+  <div class="stat"><div class="label">当前筛选出</div><div class="value">{{ summary.shown }}</div></div>
+</div>
+
+<div class="filters">
+  <span class="filter-label">状态</span>
+  <a class="btn-plain {% if not current_status %}active{% endif %}"
+     href="{{ url_for('depts', kw=kw) }}">全部 {{ summary.total }}</a>
+  <a class="btn-plain {% if current_status == '启用' %}active{% endif %}"
+     href="{{ url_for('depts', kw=kw, status='启用') }}">启用 {{ summary.on }}</a>
+  <a class="btn-plain {% if current_status == '停用' %}active{% endif %}"
+     href="{{ url_for('depts', kw=kw, status='停用') }}">停用 {{ summary.off }}</a>
+</div>
+
+<div class="toolbar">
+  <form class="search-form" method="get" action="{{ url_for('depts') }}">
+    {% if current_status %}<input type="hidden" name="status" value="{{ current_status }}">{% endif %}
+    <input type="text" name="kw" value="{{ kw }}" placeholder="搜索科室名称 / 位置 / 电话">
+    <button class="btn" type="submit">搜索</button>
+    {% if kw or current_status %}<a class="btn-plain" href="{{ url_for('depts') }}">重置</a>{% endif %}
+  </form>
+  <div class="count-info">
+    共 <b>{{ rows|length }}</b> 个科室
+    <details class="pop-box">
+      <summary class="btn-mini btn-mini-ok">＋ 新增科室</summary>
+      <form class="pop-form" method="post" action="{{ url_for('dept_save') }}">
+        <input type="hidden" name="dept_id" value="0">
+        <label>科室名称 <span class="req">*</span></label>
+        <input type="text" name="dept_name" maxlength="50" required placeholder="如：康复医学科">
+        <label>科室位置</label>
+        <input type="text" name="dept_location" maxlength="100" placeholder="如：门诊楼7层东区">
+        <label>科室电话</label>
+        <input type="text" name="dept_phone" maxlength="20" placeholder="如：0572-6011013">
+        <button class="btn-mini btn-mini-ok" type="submit">保存</button>
+      </form>
+    </details>
+  </div>
+</div>
+
+<div class="card">
+  {% if rows %}
+  <table>
+    <thead>
+      <tr>
+        <th>编号</th><th>科室名称</th><th>位置</th><th>电话</th>
+        <th>在职医生</th><th>累计挂号</th><th>状态</th><th class="th-ops">操作</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for r in rows %}
+      <tr class="{% if r.status != '启用' %}row-muted{% endif %}">
+        <td>{{ r.dept_id }}</td>
+        <td>{{ r.dept_name }}</td>
+        <td class="sub">{{ r.dept_location or '—' }}</td>
+        <td class="mono sub">{{ r.dept_phone or '—' }}</td>
+        <td>
+          {{ r.active_doctor_cnt }} 人
+          {% if r.doctor_cnt > r.active_doctor_cnt %}
+          <span class="cell-note">另有 {{ r.doctor_cnt - r.active_doctor_cnt }} 名离职医生</span>
+          {% endif %}
+        </td>
+        <td>
+          {{ r.reg_cnt }} 条
+          {% if r.future_sched %}<span class="cell-note">未来 {{ r.future_sched }} 个排班</span>{% endif %}
+        </td>
+        <td>
+          {% if r.status == '启用' %}<span class="tag tag-ok">启用</span>
+          {% else %}<span class="tag tag-cancel">停用</span>{% endif %}
+        </td>
+        <td class="ops">
+          <details class="pop-box">
+            <summary class="btn-mini btn-mini-plain">编辑</summary>
+            <form class="pop-form" method="post" action="{{ url_for('dept_save') }}">
+              <input type="hidden" name="dept_id" value="{{ r.dept_id }}">
+              <label>科室名称 <span class="req">*</span></label>
+              <input type="text" name="dept_name" maxlength="50" required value="{{ r.dept_name }}">
+              <label>科室位置</label>
+              <input type="text" name="dept_location" maxlength="100" value="{{ r.dept_location or '' }}">
+              <label>科室电话</label>
+              <input type="text" name="dept_phone" maxlength="20" value="{{ r.dept_phone or '' }}">
+              <button class="btn-mini btn-mini-ok" type="submit">保存</button>
+            </form>
+          </details>
+          <form class="inline-form" method="post" action="{{ url_for('dept_toggle', did=r.dept_id) }}">
+            {% if r.status == '启用' %}
+            <button class="btn-mini btn-mini-danger" type="submit">停用</button>
+            {% else %}
+            <button class="btn-mini btn-mini-ok" type="submit">恢复启用</button>
+            {% endif %}
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <div class="empty">没有符合条件的科室</div>
+  {% endif %}
+</div>
+
+<div class="hint" style="display:block;margin-top:14px">
+  科室只提供"停用"而不提供"删除"：<span class="mono">doctor</span>、<span class="mono">registration</span>
+  等表都通过外键引用着它，物理删除会连带毁掉历史记录。
+  停用只是让它不再出现在新增挂号的可选科室里。
+</div>
+{% endblock %}

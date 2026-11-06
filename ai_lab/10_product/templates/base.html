@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% block title %}HIS 智能助手{% endblock %}</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='app.css') }}">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='9' fill='%230f766e'/><text x='16' y='22' font-size='17' font-family='sans-serif' fill='white' text-anchor='middle'>H</text></svg>">
+</head>
+<body>
+<div class="scrim" id="scrim"></div>
+<div class="app">
+
+  <aside class="side">
+    <a class="brand" href="/">
+      <div class="logo">H</div>
+      <div>
+        <div class="bt">HIS 智能助手</div>
+        <div class="bs">问数据 · 问文档</div>
+      </div>
+    </a>
+
+    <a class="new" href="/new">＋ 新对话</a>
+
+    <div class="side-label">最近对话</div>
+    <nav class="slist">
+      {% for it in nav_sessions %}
+      <a class="sitem {% if it.id == active_sid %}on{% endif %}" href="/c/{{ it.id }}">
+        <span class="st">{{ it.title }}</span>
+        <span class="sm">{{ it.msg_count }} 句 · {{ it.updated_at[5:16] }}</span>
+      </a>
+      {% endfor %}
+      {% if not nav_sessions %}
+      <p class="empty">还没有对话记录</p>
+      {% endif %}
+    </nav>
+
+    <div class="side-foot">
+      <span class="dot"></span>
+      <a href="/history">全部记录与统计 →</a>
+    </div>
+  </aside>
+
+  <div class="main">
+    {% block body %}{% endblock %}
+  </div>
+</div>
+
+<script>
+/* 窄屏抽屉。桌面端这段等于不存在（.menu-btn 是 display:none）。 */
+(function(){
+  var b = document.getElementById('menuBtn');
+  var s = document.getElementById('scrim');
+  function close(){ document.body.classList.remove('nav-open'); }
+  if (b) b.addEventListener('click', function(){ document.body.classList.toggle('nav-open'); });
+  if (s) s.addEventListener('click', close);
+  document.addEventListener('keydown', function(e){ if (e.key === 'Escape') close(); });
+})();
+</script>
+{% block script %}{% endblock %}
+</body>
+</html>

@@ -1,0 +1,198 @@
+{% extends "base.html" %}
+{% block title %}药品目录 | 医院信息管理系统{% endblock %}
+
+{% block content %}
+<h1 class="page-title">药品目录与库存
+  <span class="page-sub">药品档案维护 + 出入库。停用的药品开不出新处方，历史处方与收费快照照常可查</span>
+</h1>
+
+<div class="stats">
+  <div class="stat">
+    <div class="label">药品品种</div>
+    <div class="value">{{ summary.total }}</div>
+  </div>
+  <div class="stat">
+    <div class="label">库存紧缺（＜{{ danger_stock_limit }}）</div>
+    <div class="value {% if level_counts.danger %}value-danger{% endif %}">{{ level_counts.danger }}</div>
+  </div>
+  <div class="stat">
+    <div class="label">库存预警（＜{{ low_stock_limit }}）</div>
+    <div class="value {% if level_counts.warn %}value-warn{% endif %}">{{ level_counts.warn }}</div>
+  </div>
+  <div class="stat">
+    <div class="label">库存总价值</div>
+    <div class="value">￥{{ '%.0f'|format(summary.asset or 0) }}</div>
+  </div>
+</div>
+
+<div class="filters">
+  <span class="filter-label">药品分类</span>
+  <a class="btn-plain {% if not cat %}active{% endif %}"
+     href="{{ url_for('medicines', kw=kw, level=current_level, mstat=current_mstat) }}">全部 {{ summary.total }}</a>
+  {% for c in categories %}
+  <a class="btn-plain {% if cat == c.category %}active{% endif %}"
+     href="{{ url_for('medicines', kw=kw, level=current_level, mstat=current_mstat, cat=c.category) }}">{{ c.category }} {{ c.cnt }}</a>
+  {% endfor %}
+</div>
+
+<div class="filters">
+  <span class="filter-label">库存状态</span>
+  <a class="btn-plain {% if not current_level %}active{% endif %}"
+     href="{{ url_for('medicines', kw=kw, cat=cat, mstat=current_mstat) }}">全部 {{ summary.total }}</a>
+  <a class="btn-plain {% if current_level == 'ok' %}active{% endif %}"
+     href="{{ url_for('medicines', kw=kw, cat=cat, mstat=current_mstat, level='ok') }}">正常 {{ level_counts.ok }}</a>
+  <a class="btn-plain {% if current_level == 'warn' %}active{% endif %}"
+     href="{{ url_for('medicines', kw=kw, cat=cat, mstat=current_mstat, level='warn') }}">预警 {{ level_counts.warn }}</a>
+  <a class="btn-plain {% if current_level == 'danger' %}active{% endif %}"
+     href="{{ url_for('medicines', kw=kw, cat=cat, mstat=current_mstat, level='danger') }}">紧缺 {{ level_counts.danger }}</a>
+</div>
+
+<div class="filters">
+  <span class="filter-label">在用状态</span>
+  <a class="btn-plain {% if not current_mstat %}active{% endif %}"
+     href="{{ url_for('medicines', kw=kw, level=current_level, cat=cat) }}">全部 {{ summary.total }}</a>
+  <a class="btn-plain {% if current_mstat == '在用' %}active{% endif %}"
+     href="{{ url_for('medicines', kw=kw, level=current_level, cat=cat, mstat='在用') }}">在用 {{ summary.active_cnt or 0 }}</a>
+  <a class="btn-plain {% if current_mstat == '停用' %}active{% endif %}"
+     href="{{ url_for('medicines', kw=kw, level=current_level, cat=cat, mstat='停用') }}">停用 {{ summary.off_cnt or 0 }}</a>
+</div>
+
+<div class="toolbar">
+  <form class="search-form" method="get" action="{{ url_for('medicines') }}">
+    <input type="hidden" name="cat" value="{{ cat }}">
+    <input type="hidden" name="level" value="{{ current_level }}">
+    <input type="hidden" name="mstat" value="{{ current_mstat }}">
+    <input type="text" name="kw" value="{{ kw }}" placeholder="搜索药品名称或生产厂家">
+    <button class="btn" type="submit">搜索</button>
+    {% if kw or current_level or cat or current_mstat %}
+      <a class="btn-plain" href="{{ url_for('medicines') }}">重置</a>
+    {% endif %}
+  </form>
+  <div class="auto-refresh"></div>
+  <div class="count-info">
+    共 <b>{{ total }}</b> 种药品，第 {{ page }} / {{ total_pages }} 页
+    <a class="btn-mini btn-mini-plain" href="{{ url_for('stock_logs') }}">查看全部流水</a>
+    {% if can('medicine.manage') %}
+    <details class="pop-box">
+      <summary class="btn-mini btn-mini-ok">＋ 新增药品</summary>
+      <form class="pop-form" method="post" action="{{ url_for('medicine_save') }}">
+        <input type="hidden" name="medicine_id" value="0">
+        <input type="hidden" name="back" value="{{ request.full_path.rstrip('?') }}">
+        <label>药品名称 <span class="req">*</span></label>
+        <input type="text" name="medicine_name" maxlength="100" required placeholder="如：阿托伐他汀钙片">
+        <label>分类</label>
+        <input type="text" name="category" maxlength="30" list="catList" placeholder="如：心血管系统用药">
+        <datalist id="catList">
+          {% for c in categories %}<option value="{{ c.category }}">{% endfor %}
+        </datalist>
+        <label>规格</label>
+        <input type="text" name="spec" maxlength="50" placeholder="如：20mg*7片">
+        <label>单位</label>
+        <input type="text" name="unit" maxlength="10" placeholder="盒 / 瓶 / 支">
+        <label>单价（元） <span class="req">*</span></label>
+        <input type="number" name="price" step="0.01" min="0.01" required placeholder="如：36.80">
+        <label>期初库存</label>
+        <input type="number" name="stock" step="1" min="0" value="0">
+        <label>生产厂家</label>
+        <input type="text" name="manufacturer" maxlength="100" placeholder="如：辉瑞制药">
+        <p class="pop-note">期初库存会自动记一笔「新增药品期初入库」流水，保证库存账本对得上。</p>
+        <button class="btn-mini btn-mini-ok" type="submit">保存</button>
+      </form>
+    </details>
+    {% endif %}
+  </div>
+</div>
+
+<div class="card">
+  {% if rows %}
+  <table>
+    <thead>
+      <tr>
+        <th>编号</th><th>药品名称</th><th>分类</th><th>规格</th><th>生产厂家</th>
+        <th>单价</th><th>库存</th><th>状态</th><th class="th-ops">库存 / 目录</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for r in rows %}
+      <tr class="{% if r.status != '在用' %}row-muted{% elif r.level == 'danger' %}row-danger{% endif %}">
+        <td>{{ r.medicine_id }}</td>
+        <td>
+          <a class="link" href="{{ url_for('stock_logs', medicine_id=r.medicine_id) }}">{{ r.medicine_name }}</a>
+        </td>
+        <td>
+          <a class="tag tag-cat" href="{{ url_for('medicines', cat=r.category) }}">{{ r.category or '未分类' }}</a>
+        </td>
+        <td class="sub">{{ r.spec }}</td>
+        <td class="sub">{{ r.manufacturer or '—' }}</td>
+        <td>￥{{ '%.2f'|format(r.price) }}</td>
+        <td>
+          <span class="tag tag-{{ r.level }}">{{ r.stock }} {{ r.unit or '' }}</span>
+          {% if r.level == 'danger' %}<span class="sub">紧缺</span>
+          {% elif r.level == 'warn' %}<span class="sub">预警</span>{% endif %}
+        </td>
+        <td>
+          {% if r.status == '在用' %}<span class="tag tag-ok">在用</span>
+          {% else %}<span class="tag tag-cancel">停用</span>{% endif %}
+        </td>
+        <td class="ops">
+          <form class="stock-form" method="post"
+                action="{{ url_for('medicine_stock', mid=r.medicine_id) }}">
+            <input type="hidden" name="back" value="{{ request.full_path.rstrip('?') }}">
+            <input type="number" name="quantity" min="1" step="1" value="10" class="qty-input">
+            <button class="btn-mini btn-mini-ok" type="submit" name="change_type" value="入库">入库</button>
+            <button class="btn-mini btn-mini-danger" type="submit" name="change_type" value="出库"
+                    onclick="return confirm('确定按该数量出库吗？');">出库</button>
+          </form>
+          {% if can('medicine.manage') %}
+          <details class="pop-box">
+            <summary class="btn-mini btn-mini-plain">编辑</summary>
+            <form class="pop-form" method="post" action="{{ url_for('medicine_save') }}">
+              <input type="hidden" name="medicine_id" value="{{ r.medicine_id }}">
+              <input type="hidden" name="back" value="{{ request.full_path.rstrip('?') }}">
+              <label>药品名称 <span class="req">*</span></label>
+              <input type="text" name="medicine_name" maxlength="100" required value="{{ r.medicine_name }}">
+              <label>分类</label>
+              <input type="text" name="category" maxlength="30" list="catList" value="{{ r.category or '' }}">
+              <label>规格</label>
+              <input type="text" name="spec" maxlength="50" value="{{ r.spec or '' }}">
+              <label>单位</label>
+              <input type="text" name="unit" maxlength="10" value="{{ r.unit or '' }}">
+              <label>单价（元） <span class="req">*</span></label>
+              <input type="number" name="price" step="0.01" min="0.01" required value="{{ '%.2f'|format(r.price) }}">
+              <label>生产厂家</label>
+              <input type="text" name="manufacturer" maxlength="100" value="{{ r.manufacturer or '' }}">
+              <p class="pop-note">
+                当前库存 {{ r.stock }} {{ r.unit or '' }}。库存不能在这里改——
+                请用「入库 / 出库」，否则库存流水会对不上账。
+              </p>
+              <button class="btn-mini btn-mini-ok" type="submit">保存</button>
+            </form>
+          </details>
+          <form class="inline-form" method="post"
+                action="{{ url_for('medicine_toggle', mid=r.medicine_id) }}">
+            <input type="hidden" name="back" value="{{ request.full_path.rstrip('?') }}">
+            {% if r.status == '在用' %}
+            <button class="btn-mini btn-mini-danger" type="submit">停用</button>
+            {% else %}
+            <button class="btn-mini btn-mini-ok" type="submit">恢复在用</button>
+            {% endif %}
+          </form>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+    <div class="empty">没有符合条件的药品</div>
+  {% endif %}
+</div>
+
+{% if total_pages > 1 %}
+<div class="pager">
+  {% for p, url in pager %}
+    <a class="btn-plain {% if p == page %}active{% endif %}" href="{{ url }}">{{ p }}</a>
+  {% endfor %}
+</div>
+{% endif %}
+{% endblock %}

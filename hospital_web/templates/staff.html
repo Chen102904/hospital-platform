@@ -1,0 +1,166 @@
+{% extends "base.html" %}
+{% block title %}员工与账号 | 医院信息管理系统{% endblock %}
+
+{% block content %}
+<h1 class="page-title">员工与账号
+  <span class="page-sub">登录账号、角色分配、密码重置。停用只收回登录权限，历史操作日志保留</span>
+</h1>
+
+<div class="stats">
+  <div class="stat"><div class="label">员工总数</div><div class="value">{{ rows|length }}</div></div>
+  <div class="stat">
+    <div class="label">启用中</div>
+    <div class="value">{{ rows|selectattr('status')|list|length }}</div>
+  </div>
+  <div class="stat">
+    <div class="label">已停用</div>
+    <div class="value {% if rows|rejectattr('status')|list|length %}value-warn{% endif %}">{{ rows|rejectattr('status')|list|length }}</div>
+  </div>
+  <div class="stat">
+    <div class="label">启用中的管理员</div>
+    <div class="value {% if active_admin <= 1 %}value-danger{% endif %}">{{ active_admin }}</div>
+  </div>
+</div>
+
+<div class="toolbar">
+  <div class="count-info">
+    共 <b>{{ rows|length }}</b> 个账号，密码以 scrypt 哈希存储，任何人都看不到明文
+  </div>
+  <details class="pop-box">
+    <summary class="btn-mini btn-mini-ok">＋ 新增员工</summary>
+    <form class="pop-form" method="post" action="{{ url_for('staff_save') }}">
+      <input type="hidden" name="staff_id" value="0">
+      <label>登录账号 <span class="req">*</span></label>
+      <input type="text" name="username" maxlength="30" required
+             pattern="[A-Za-z0-9_]{3,30}" placeholder="字母 / 数字 / 下划线，3~30 位">
+      <label>姓名 <span class="req">*</span></label>
+      <input type="text" name="real_name" maxlength="30" required placeholder="如：周敏">
+      <label>角色 <span class="req">*</span></label>
+      <select name="role" required>
+        {% for r in roles %}<option value="{{ r }}">{{ r }}</option>{% endfor %}
+      </select>
+      <label>联系电话</label>
+      <input type="text" name="phone" maxlength="20" placeholder="11 位手机号">
+      <label>初始密码 <span class="req">*</span></label>
+      <input type="password" name="password" minlength="6" required placeholder="至少 6 位">
+      <button class="btn-mini btn-mini-ok" type="submit">保存</button>
+    </form>
+  </details>
+</div>
+
+<div class="card">
+  <table>
+    <thead>
+      <tr>
+        <th>编号</th><th>登录账号</th><th>姓名</th><th>角色</th><th>联系电话</th>
+        <th>状态</th><th>最近登录</th><th>操作记录</th><th class="th-ops">操作</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for s in rows %}
+      <tr class="{% if not s.status %}row-muted{% endif %}">
+        <td>{{ s.staff_id }}</td>
+        <td class="mono">{{ s.username }}</td>
+        <td>
+          {{ s.real_name }}
+          {% if s.is_me %}<span class="tag tag-ok">当前登录</span>{% endif %}
+        </td>
+        <td><span class="tag tag-已就诊">{{ s.role }}</span></td>
+        <td class="mono sub">{{ s.phone or '—' }}</td>
+        <td>
+          {% if s.status %}<span class="tag tag-ok">启用</span>
+          {% else %}<span class="tag tag-cancel">停用</span>{% endif %}
+        </td>
+        <td class="sub">{{ s.last_login.strftime('%Y-%m-%d %H:%M') if s.last_login else '从未登录' }}</td>
+        <td>{{ s.op_cnt }} 条</td>
+        <td class="ops">
+          <details class="pop-box">
+            <summary class="btn-mini btn-mini-plain">编辑</summary>
+            <form class="pop-form" method="post" action="{{ url_for('staff_save') }}">
+              <input type="hidden" name="staff_id" value="{{ s.staff_id }}">
+              <label>登录账号 <span class="req">*</span></label>
+              <input type="text" name="username" maxlength="30" required
+                     pattern="[A-Za-z0-9_]{3,30}" value="{{ s.username }}">
+              <label>姓名 <span class="req">*</span></label>
+              <input type="text" name="real_name" maxlength="30" required value="{{ s.real_name }}">
+              <label>角色 <span class="req">*</span></label>
+              <select name="role" required>
+                {% for r in roles %}
+                <option value="{{ r }}" {% if s.role == r %}selected{% endif %}>{{ r }}</option>
+                {% endfor %}
+              </select>
+              <label>联系电话</label>
+              <input type="text" name="phone" maxlength="20" value="{{ s.phone or '' }}">
+              <label>新密码（留空即不修改）</label>
+              <input type="password" name="password" minlength="6" placeholder="至少 6 位">
+              <button class="btn-mini btn-mini-ok" type="submit">保存</button>
+            </form>
+          </details>
+
+          <details class="pop-box">
+            <summary class="btn-mini btn-mini-plain">重置密码</summary>
+            <form class="pop-form" method="post"
+                  action="{{ url_for('staff_password', sid=s.staff_id) }}">
+              <label>给「{{ s.real_name }}」设置新密码</label>
+              <input type="password" name="password" minlength="6" required placeholder="至少 6 位">
+              <button class="btn-mini btn-mini-danger" type="submit">确认重置</button>
+            </form>
+          </details>
+
+          <form class="inline-form" method="post"
+                action="{{ url_for('staff_toggle', sid=s.staff_id) }}">
+            {% if s.status %}
+              {% if s.is_me or s.last_admin %}
+              <button class="btn-mini btn-mini-plain" type="button" disabled
+                      title="{{ '不能停用当前登录的自己' if s.is_me else '这是最后一个启用中的管理员' }}">停用</button>
+              {% else %}
+              <button class="btn-mini btn-mini-danger" type="submit">停用</button>
+              {% endif %}
+            {% else %}
+            <button class="btn-mini btn-mini-ok" type="submit">启用</button>
+            {% endif %}
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<div class="hint-warn" style="display:block;margin-top:14px">
+  两道防自锁检查（后端强制，不只是置灰按钮）：<br>
+  ① 不能停用或降级<span class="mono"> 当前登录的自己</span>——否则一按就把自己关在系统外；<br>
+  ② 不能停用或降级<span class="mono"> 最后一个启用中的管理员</span>——否则系统管理模块再也没人能进。<br>
+  员工同样是"停用"而不是删除：<span class="mono">operation_log</span> 里记着他做过的所有操作，
+  删账号会让这些日志变成找不到人的孤儿记录。
+</div>
+
+<div class="card">
+  <h2>角色权限对照表</h2>
+  <table>
+    <thead>
+      <tr><th style="width:160px">角色</th><th>拥有的权限点</th></tr>
+    </thead>
+    <tbody>
+      {% for r in role_table %}
+      <tr>
+        <td><span class="tag tag-已就诊">{{ r.role }}</span></td>
+        <td class="wrap-cell">
+          {% if '*' in r.perms %}
+            <span class="tag tag-ok">全部权限</span>
+          {% else %}
+            {% for p in r.perms %}<span class="tag tag-action-chip mono">{{ p }}</span>
+            {% endfor %}
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  <div class="hint" style="display:block;margin-top:12px">
+    权限点在代码里是 <span class="mono">ROLE_PERMS</span> 这张表，路由和权限的对应关系是
+    <span class="mono">ENDPOINT_PERMS</span>。没登记的路由默认"必须登录"，是收紧而不是放开。
+  </div>
+</div>
+
+{% endblock %}

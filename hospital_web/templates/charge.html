@@ -1,0 +1,157 @@
+{% extends "base.html" %}
+{% block title %}收费办理 | 医院信息管理系统{% endblock %}
+
+{% block content %}
+<h1 class="page-title">
+  门诊收费办理
+  <span class="page-sub">挂号 #{{ reg.reg_id }}</span>
+</h1>
+
+<div class="card visit-head">
+  <h2>患者与就诊信息</h2>
+  <div class="info-grid">
+    <div class="info-item"><span class="k">患者</span>
+      <span class="v">{{ reg.patient_name }} <span class="sub">{{ reg.gender }}{% if reg.age is not none %} · {{ reg.age }}岁{% endif %}</span></span></div>
+    <div class="info-item"><span class="k">联系电话</span><span class="v mono">{{ reg.phone_mask }}</span></div>
+    <div class="info-item"><span class="k">挂号状态</span>
+      <span class="v"><span class="tag tag-{{ reg.reg_status }}">{{ reg.reg_status }}</span>
+        <span class="tag tag-type-{{ reg.visit_type }}">{{ reg.visit_type }}</span></span></div>
+    <div class="info-item"><span class="k">就诊科室</span><span class="v">{{ reg.dept_name }}</span></div>
+    <div class="info-item"><span class="k">接诊医生</span>
+      <span class="v">{{ reg.doctor_name }} <span class="sub">{{ reg.title or '' }}</span></span></div>
+    <div class="info-item"><span class="k">挂号时间</span>
+      <span class="v">{{ reg.reg_date.strftime('%Y-%m-%d %H:%M') if reg.reg_date else '' }}</span></div>
+    {% if record %}
+    <div class="info-item wide"><span class="k">诊断结果</span>
+      <span class="v">{{ record.diagnosis or '—' }}</span></div>
+    {% endif %}
+  </div>
+</div>
+
+<div class="card">
+  <h2>应收费用明细{% if charge %}（收费时的快照）{% else %}（按当前药价计算）{% endif %}</h2>
+  <table class="rx-table">
+    <thead>
+      <tr>
+        <th style="width:56px">序号</th><th>收费项目</th><th>费用类型</th>
+        <th style="width:100px">单价</th><th style="width:80px">数量</th>
+        <th style="width:110px">金额</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for it in items %}
+      <tr>
+        <td>{{ loop.index }}</td>
+        <td>{{ it.item_name }}</td>
+        <td><span class="tag {% if it.item_type == '挂号费' %}tag-type-初诊{% else %}tag-ok{% endif %}">{{ it.item_type }}</span></td>
+        <td>￥{{ '%.2f'|format(it.unit_price) }}</td>
+        <td>{{ it.quantity }}</td>
+        <td>￥{{ '%.2f'|format(it.amount) }}</td>
+      </tr>
+      {% endfor %}
+      <tr class="rx-total-row">
+        <td colspan="5" class="rx-total-label">应收合计（挂号费 ￥{{ '%.2f'|format(reg.reg_fee) }} + 药费 ￥{{ '%.2f'|format(drug_fee) }}）</td>
+        <td class="rx-total"><b>￥{{ '%.2f'|format(total_fee) }}</b></td>
+      </tr>
+    </tbody>
+  </table>
+  <div class="rx-upper">人民币（大写）：{{ total_upper }}</div>
+</div>
+
+{% if charge %}
+<div class="card">
+  <h2>收费信息</h2>
+  <div class="info-grid">
+    <div class="info-item"><span class="k">收费单号</span><span class="v mono">{{ charge.charge_no }}</span></div>
+    <div class="info-item"><span class="k">收费状态</span>
+      <span class="v"><span class="tag tag-{{ charge.charge_status }}">{{ charge.charge_status }}</span></span></div>
+    <div class="info-item"><span class="k">支付方式</span><span class="v">{{ charge.pay_method }}</span></div>
+    <div class="info-item"><span class="k">收费时间</span>
+      <span class="v">{{ charge.charge_time.strftime('%Y-%m-%d %H:%M') if charge.charge_time else '' }}</span></div>
+    <div class="info-item"><span class="k">收费员</span><span class="v">{{ charge.operator or '—' }}</span></div>
+    {% if charge.refund_time %}
+    <div class="info-item"><span class="k">退费时间</span>
+      <span class="v">{{ charge.refund_time.strftime('%Y-%m-%d %H:%M') }}</span></div>
+    <div class="info-item"><span class="k">退费操作员</span><span class="v">{{ charge.refund_operator or '—' }}</span></div>
+    <div class="info-item wide"><span class="k">退费原因</span><span class="v">{{ charge.refund_reason or '—' }}</span></div>
+    {% endif %}
+  </div>
+
+  <div class="form-actions">
+    <a class="btn" href="{{ url_for('print_charge', reg_id=reg.reg_id) }}" target="_blank">打印收据</a>
+    <a class="btn-plain" href="{{ url_for('charges', kw=charge.charge_no) }}">在收费记录中查看</a>
+  </div>
+
+  {% if charge.charge_status == '已收费' and reg.reg_status == '已收费' and can('dispense.do') %}
+  <div class="sub-panel">
+    <div class="sub-panel-title">药房发药</div>
+    <p class="hint">患者已交费，请药师按处方核对后发药。发药后挂号状态变为「已发药」；若之后退费，这条发药记录会被置为「已退回」。</p>
+    <form method="post" action="{{ url_for('dispense', reg_id=reg.reg_id) }}"
+          onsubmit="return confirm('确认已把这副药发给患者吗？');">
+      <input type="hidden" name="back" value="{{ request.full_path.rstrip('?') }}">
+      <button class="btn" type="submit">确认发药</button>
+    </form>
+  </div>
+  {% endif %}
+
+  {% if charge.charge_status == '已收费' and can('charge.refund') %}
+  <div class="sub-panel">
+    <div class="sub-panel-title">退费（退款并退回药品）</div>
+    <form method="post" action="{{ url_for('charge_refund', reg_id=reg.reg_id) }}"
+          onsubmit="return confirm('确定退费吗？\n\n退款 ￥{{ '%.2f'|format(charge.total_fee) }}，同时把本次处方的药品全部退回库存，退费后不能撤销。');">
+      <div class="form-row">
+        <label for="refund_reason">退费原因</label>
+        <select id="refund_reason" name="refund_reason">
+          <option value="患者要求退费">患者要求退费</option>
+          <option value="医生撤销处方">医生撤销处方</option>
+          <option value="重复收费冲正">重复收费冲正</option>
+          <option value="药品缺货">药品缺货</option>
+        </select>
+      </div>
+      <button class="btn btn-danger" type="submit">确认退费</button>
+    </form>
+  </div>
+  {% elif charge.charge_status == '已收费' %}
+  <div class="notice notice-warn">当前账号没有退费权限，退费请使用收费员或管理员账号。</div>
+  {% endif %}
+</div>
+
+{% elif reg.reg_status == '已就诊' %}
+<div class="card">
+  <h2>收费入账</h2>
+  {% if can('charge.do') %}
+  <form method="post" action="{{ url_for('charge_pay', reg_id=reg.reg_id) }}"
+        onsubmit="return confirm('确认收取 ￥{{ '%.2f'|format(total_fee) }} 吗？');">
+    <div class="form-row">
+      <label>支付方式 <span class="req">*</span></label>
+      <div class="radio-group">
+        {% for p in pay_methods %}
+        <label class="radio">
+          <input type="radio" name="pay_method" value="{{ p }}" {% if loop.first %}checked{% endif %}> {{ p }}
+        </label>
+        {% endfor %}
+      </div>
+    </div>
+    <button class="btn" type="submit">确认收费 ￥{{ '%.2f'|format(total_fee) }}</button>
+  </form>
+  {% else %}
+  <div class="notice notice-warn">当前账号没有收费权限，请使用挂号员、收费员或管理员账号办理。</div>
+  {% endif %}
+</div>
+
+{% else %}
+<div class="card">
+  <div class="notice notice-warn">
+    这条挂号当前状态是「{{ reg.reg_status }}」，不能收费。
+    {% if reg.reg_status == '已挂号' %}需要先由医生「接诊开方」，状态变成「已就诊」后才能收费。{% endif %}
+  </div>
+  <div class="form-actions">
+    {% if reg.reg_status == '已挂号' and can('reg.visit') %}
+      <a class="btn" href="{{ url_for('visit', reg_id=reg.reg_id) }}">去接诊开方</a>
+    {% endif %}
+    <a class="btn-plain" href="{{ url_for('registrations') }}">返回挂号管理</a>
+  </div>
+</div>
+{% endif %}
+
+{% endblock %}

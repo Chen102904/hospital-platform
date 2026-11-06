@@ -1,0 +1,1036 @@
+{
+  "summary": {
+    "n": 38,
+    "passed": 37,
+    "acc": 97.4,
+    "tokens": 143070,
+    "elapsed": 386.7,
+    "abnormal": 0,
+    "abnormal_ids": [],
+    "refuse_n": 8,
+    "refuse_ok": 8,
+    "refuse_rate": 100.0,
+    "false_refusal": 1,
+    "nodata_n": 4,
+    "nodata_ok": 4,
+    "tool_n": 31,
+    "tool_ok": 30,
+    "tool_rate": 96.8,
+    "cite_n": 9,
+    "cite_ok": 9,
+    "cite_rate": 100.0,
+    "by_cat": {
+      "查库·收入": {
+        "n": 6,
+        "ok": 5
+      },
+      "查库·库存": {
+        "n": 5,
+        "ok": 5
+      },
+      "查文档": {
+        "n": 9,
+        "ok": 9
+      },
+      "该拒答": {
+        "n": 6,
+        "ok": 6
+      },
+      "事实澄清": {
+        "n": 1,
+        "ok": 1
+      },
+      "文档说不做": {
+        "n": 2,
+        "ok": 2
+      },
+      "多工具": {
+        "n": 3,
+        "ok": 3
+      },
+      "空结果": {
+        "n": 4,
+        "ok": 4
+      },
+      "能力边界": {
+        "n": 2,
+        "ok": 2
+      }
+    }
+  },
+  "results": [
+    {
+      "id": "A01",
+      "cat": "查库·收入",
+      "q": "近 30 天哪个科室收入最高？",
+      "pass": true,
+      "why": "全部断言命中",
+      "flags": {},
+      "answer": "近 30 天收入最高的是**内科**，共 1159.40 元（9 张收费单）。\n\n排在它后面的是儿科（1134.00 元，8 单）和心血管内科（910.90 元，6 单），前三名咬得还挺紧。急诊科以 863.70 元排第四，骨科 633.80 元排第五。",
+      "status": "ok",
+      "tools": [
+        "dept_revenue_rank"
+      ],
+      "want_tools": [
+        "dept_revenue_rank"
+      ],
+      "tool_hit": true,
+      "missing_tools": [],
+      "elapsed": 6.2,
+      "tokens": 2780,
+      "rounds": 2,
+      "expect_refuse": false,
+      "expect_no_data": false,
+      "cited": null,
+      "why_case": "最基本的工具调用题。金额唯一标识科室，所以只断言金额就能同时验证科室和金额。"
+    },
+    {
+      "id": "A02",
+      "cat": "查库·收入",
+      "q": "近 30 天收入排名前三的科室分别是多少？",
+      "pass": true,
+      "why": "全部断言命中",
+      "flags": {},
+      "answer": "近 30 天收入排名前三的科室是：\n\n1. 内科：1159.40 元（9 张收费单）\n2. 儿科：1134.00 元（8 张收费单）\n3. 心血管内科：910.90 元（6 张收费单）",
+      "status": "ok",
+      "tools": [
+        "dept_revenue_rank"
+      ],
+      "want_tools": [
+        "dept_revenue_rank"
+      ],
+      "tool_hit": true,
+      "missing_tools": [],
+      "elapsed": 7.4,
+      "tokens": 2881,
+      "rounds": 2,
+      "expect_refuse": false,
+      "expect_no_data": false,
+      "cited": null,
+      "why_case": "要求把三行结果都读出来并对应上，测的是'读表格'而不是'抄第一行'。"
+    },
+    {
+      "id": "A03",
+      "cat": "查库·收入",
+      "q": "儿科近 30 天收入是多少？",
+      "pass": true,
+      "why": "全部断言命中",
+      "flags": {},
+      "answer": "儿科近 30 天的收入是 1134.00 元，共处理了 8 张收费单。",
+      "status": "ok",
+      "tools": [
+        "dept_revenue_rank"
+      ],
+      "want_tools": [
+        "dept_revenue_rank"
+      ],
+      "tool_hit": true,
+      "missing_tools": [],
+      "elapsed": 6.3,
+      "tokens": 2859,
+      "rounds": 2,
+      "expect_refuse": false,
+      "expect_no_data": false,
+      "cited": null,
+      "why_case": "指定科室而非第一名，模型必须自己从结果里按名字找行，不能只看排序第一。"
+    },
+    {
+      "id": "A04",
+      "cat": "查库·收入",
+      "q": "近 30 天收入最低的科室是哪个？收入多少？",
+      "pass": true,
+      "why": "全部断言命中",
+      "flags": {},
+      "answer": "近30天收入最低的科室是**耳鼻喉科**，收入是 **47.80元**（只有1张收费单）。",
+      "status": "ok",
+      "tools": [
+        "dept_revenue_rank"
+      ],
+      "want_tools": [
+        "dept_revenue_rank"
+      ],
+      "tool_hit": true,
+      "missing_tools": [],
+      "elapsed": 9.2,
+      "tokens": 3035,
+      "rounds": 2,
+      "expect_refuse": false,
+      "expect_no_data": false,
+      "cited": null,
+      "why_case": "工具返回的是降序，末位在最后一行。模型很容易顺手报第一名。"
+    },
+    {
+      "id": "A05",
+      "cat": "查库·收入",
+      "q": "把近 30 天各科室收入从高到低，前五名列一下",
+      "pass": true,
+      "why": "全部断言命中",
+      "flags": {},
+      "answer": "近30天各科室收入排名前五：\n\n1. **内科**：1159.40元（9张收费单）\n2. **儿科**：1134.00元（8张收费单）\n3. **心血管内科**：910.90元（6张收费单）\n4. **急诊科**：863.70元（7张收费单）\n5. **骨科**：633.80元（7张收费单）\n\n内科和儿科收入比较接近，都超过了1100元；心血管内科和急诊科紧随其后，在860到910元之间；骨科排第五，630多元。",
+      "status": "ok",
+      "tools": [
+        "dept_revenue_rank"
+      ],
+      "want_tools": [
+        "dept_revenue_rank"
+      ],
+      "tool_hit": true,
+      "missing_tools": [],
+      "elapsed": 6.8,
+      "tokens": 2798,
+      "rounds": 2,
+      "expect_refuse": false,
+      "expect_no_data": false,
+      "cited": null,
+      "why_case": "五行的完整转述，看它会不会漏行、会不会把相邻行的金额串位。"
+    },
+    {
+      "id": "A06",
+      "cat": "查库·收入",
+      "q": "内科近 30 天开了多少张收费单？",
+      "pass": false,
+      "why": "误拒：这题本该能答，同义表述（9张 / 9个 / 9笔 / 9单）",
+      "flags": {
+        "false_refusal": true
+      },
+      "answer": "抱歉，我手头的工具只能查各科室的收入金额排名，没法直接给你内科的收费单数量。\n\n我能查到的相关数据是：\n- 内科近30天在全院的收入排名和具体金额\n\n如果你需要收费单数量，可能需要直接去系统里查，或者告诉我你实际想了解的是什么（比如收入情况、业务量对比等），我看能不能用现有工具帮你。",
+      "status": "ok",
+      "tools": [],
+      "want_tools": [
+        "dept_revenue_rank"
+      ],
+      "tool_hit": false,
+      "missing_tools": [
+        "dept_revenue_rank"
+      ],
+      "elapsed": 8.6,
+      "tokens": 1366,
+      "rounds": 1,
+      "expect_refuse": false,
+      "expect_no_data": false,
+      "cited": null,
+      "why_case": "工具返回的是'收费单数'列，不是金额。测它有没有读对列而不是拿错列。"
+    },
+    {
+      "id": "B01",
+      "cat": "查库·库存",
+      "q": "现在有没有库存低于 20 的药品？",
+      "pass": true,
+      "why": "正确识别了空结果",
+      "flags": {
+        "mentions_number": true
+      },
+      "answer": "目前库存里没有低于 20 的药品，库存状况还挺健康的。",
+      "status": "ok",
+      "tools": [
+        "low_stock_medicines"
+      ],
+      "want_tools": [
+        "low_stock_medicines"
+      ],
+      "tool_hit": true,
+      "missing_tools": [],
+      "elapsed": 7.2,
+      "tokens": 2720,
+      "rounds": 2,
+      "expect_refuse": false,
+      "expect_no_data": true,
+      "cited": null,
+      "why_case": "实测库里这个阈值下是 0 条。空集是最容易诱发编造的场景，所以单独出一题。"
+    },
+    {
+      "id": "B02",
+      "cat": "查库·库存",
+      "q": "库存低于 50 的药有哪些？",
+      "pass": true,
+      "why": "全部断言命中",
+      "flags": {},
+      "answer": "库存低于 50 的药只有 1 种：\n\n**地塞米松磷酸钠注射液**（注射与输液用药），目前库存 45 支。\n\n建议关注一下这个药的补货情况。",
+      "status": "ok",
+      "tools": [
+        "low_stock_medicines"
+      ],
+      "want_tools": [
+        "low_stock_medicines"
+      ],
+      "tool_hit": true,
+      "missing_tools": [],
+      "elapsed": 6.5,
+      "tokens": 2598,
+      "rounds": 2,
+      "expect_refuse": false,
+      "expect_no_data": false,
+      "cited": null,
+      "why_case": "阈值 50 时只有一条，且这条是唯一答案，容易验证。"
+    },
+    {
+      "id": "B03",
+      "cat": "查库·库存",
+      "q": "哪个药库存最少？还剩多少？",
+      "pass": true,
+      "why": "全部断言命中",
+      "flags": {},
+      "answer": "库存最少的药是**地塞米松磷酸钠注射液**，还剩 **45 支**，属于注射与输液用药，目前状态是在用。",
+      "status": "ok",
+      "tools": [
+        "medicine_stock"
+      ],
+      "want_tools": [
+        "medicine_stock"
+      ],
+      "tool_hit": true,
+      "missing_tools": [],
+      "elapsed": 6.8,
+      "tokens": 2659,
+      "rounds": 2,
+      "expect_refuse": false,
+      "expect_no_data": false,
+      "cited": null,
+      "why_case": "排序语义，不是阈值语义。必须用 medicine_stock(order=asc) 取第一条；用 low_stock_medicines 猜阈值永远猜不准。"
+    },
+    {
+      "id": "B04",
+      "cat": "查库·库存",
+      "q": "布洛芬缓释胶囊还有多少库存？",
+      "pass": true,
+      "why": "全部断言命中",
+      "flags": {},
+      "answer": "布洛芬缓释胶囊目前还有 480 盒库存，状态是在用。",
+      "status": "ok",
+      "tools": [
+        "medicine_stock"
+      ],
+      "want_tools": [
+        "medicine_stock"
+      ],
+      "tool_hit": true,
+      "missing_tools": [],
+      "elapsed": 5.2,
+      "tokens": 2529,
+      "rounds": 2,
+      "expect_refuse": false,
+      "expect_no_data": false,
+      "cited": null,
+      "why_case": "点查语义：按药品名查，任何库存量都查得到。上一版这题必须把阈值提到 500 以上才碰得到，工具表达力不够。"
+    },
+    {
+      "id": "B05",
+      "cat": "查库·库存",
+      "q": "库存最多的是哪个药？有多少？",
+      "pass": true,
+      "why": "全部断言命中",
+      "flags": {},
+      "answer": "库存最多的是**葡萄糖注射液**，目前有 **720 瓶**，属于注射与输液用药，状态是在用。",
+      "status": "ok",
+      "tools": [
+        "medicine_stock"
+      ],
+      "want_tools": [
+        "medicine_stock"
+      ],
+      "tool_hit": true,
+      "missing_tools": [],
+      "elapsed": 4.7,
+      "tokens": 2443,
+      "rounds": 2,
+      "expect_refuse": false,
+      "expect_no_data": false,
+      "cited": null,
+      "why_case": "和 B03 反向，专门测 order=desc 这条分支有没有被模型正确传参。只写 asc 的工具在这题上会给出『最少』的答案。"
+    },
+    {
+      "id": "C01",
+      "cat": "查文档",
+      "q": "这个系统的密码是怎么存的？",
+      "pass": true,
+      "why": "全部断言命中",
+      "flags": {},
+      "answer": "根据项目文档，这个系统的密码是这样存的：\n\n**不存明文，用 scrypt 哈希存储**\n\n具体来说：\n- 使用 `werkzeug.security` 库的 `generate_password_hash` 函数，采用 **scrypt** 算法对密码进行哈希处理\n- 登录验证时用 `check_password_hash` 比对哈希值\n- 数据库里只存哈希后的结果，不存明文密码\n\n（出处：hospital_db_project/README.md > 技术栈；hospital_web/README.md > 关键实现说明）\n\n**额外的安全措施**：\n- 登录失败时，不区分\"账号不存在\"和\"密码错误\"，统一提示错误，防止攻击者通过错误信息枚举账号\n- 演示数据里的员工账号（如 admin/admin123、gh01/123456 等）在库里存的也是 scrypt 哈希\n\n（出处：hospital_web/README.md > 关键实现说明）",
+      "status": "ok",
+      "tools": [
+        "search_docs"
+      ],
+      "want_tools": [
+        "search_docs"
+      ],
+      "tool_hit": true,
+      "missing_tools": [],
+      "elapsed": 12.9,
+      "tokens": 4034,
+      "rounds": 2,
+      "expect_refuse": false,
+      "expect_no_data": false,
+      "cited": true,
+      "why_case": "实测 top-1 只有 0.520 且命中不相关块，属于检索难度较高的一题，预期会失败。留着看真实短板。"
+    },
+    {
+      "id": "C02",
+      "cat": "查文档",
+      "q": "数据库一共设计了多少张表？",
+      "pass": true,
+      "why": "全部断言命中",
+      "flags": {},
+      "answer": "数据库一共设计了 **15 张表**。\n\n出处：hospital_db_project/README.md > \"数据库表结构（15 张表）\" 章节。\n\n这 15 张表分别是：department（科室）、doctor（医生）、patient（患者）、registration（挂号）、medical_record（病历）、medicine（药品）、prescription_detail（处方明细）、medicine_stock_log（药品出入库流水）、charge（收费单）、charge_detail（收费明细）、staff（员工账号）、operation_log（操作日志）、doctor_schedule（医生排班）、dispense（药房发药）、admission（住院登记）。",
+      "status": "ok",
+      "tools": [
+        "search_docs"
+      ],
+      "want_tools": [
+        "search_docs"
+      ],
+      "tool_hit": true,
+      "missing_tools": [],
+      "elapsed": 8.3,
+      "tokens": 3585,
+      "rounds": 2,
+      "expect_refuse": false,
+      "expect_no_data": false,
+      "cited": true,
+      "why_case": "实测 top-1 相似度 0.700，命中'数据库表结构（15 张表）'，属于应该答对的题。"
+    },
+    {
+      "id": "C03",
+      "cat": "查文档",
+      "q": "同一个患者能同时住两次院吗？系统怎么保证的？",
+      "pass": true,
+      "why": "全部断言命中",
+      "flags": {},
+      "answer": "不能。同一个患者**同一时间只能在院一次**，不能同时住两次院。\n\n系统是这样保证的（出自《数据库设计文档》2.15 和 3.11 节）：\n\n住院表里有个叫 `current_patient_id` 的**生成列**，它的值是根据住院状态自动算出来的：\n- 如果这条住院记录的状态是\"**在院**\"，这个列就填上患者编号（比如 7）\n- 如果状态是\"**已出院**\"，这个列就填 NULL\n\n然后系统在这个生成列上建了一个**唯一索引**。关键原理是：**唯一索引不约束 NULL 值**。\n\n这样一来：\n- 一个患者如果**正在住院**，他的编号就会出现在这个列里，唯一索引保证这个编号只能出现一次 → 想再办一次入院？数据库直接报错，插不进去\n- 一个患者如果**已经出院**，他的编号在这列里是 NULL，不参与唯一约束 → 想再住院？随便存，存多少次都行\n\n这个设计的好处是**数据库自己兜底**，不靠应用层\"先查一遍再插入\"。因为如果只靠应用层检查，两个人同时给同一个患者点\"办理入院\"，两边都查不到在院记录，就都插进去了，并发下会出事。现在唯一键就是最后一道防线。\n\n另外表上还有两条 CHECK 约束防止数据自相矛盾：出院时间不能早于入院时间、在院状态必须有 NULL 的出院时间、已出院状态必须有出院时间。",
+      "status": "ok",
+      "tools": [
+        "search_docs"
+      ],
+      "want_tools": [
+        "search_docs"
+      ],
+      "tool_hit": true,
+      "missing_tools": [],
+      "elapsed": 13.3,
+      "tokens": 3963,
+      "rounds": 2,
+      "expect_refuse": false,
+      "expect_no_data": false,
+      "cited": true,
+      "why_case": "答案在'3.11 为什么住院要单独建表'一节，实测 0.714。测它有没有读到实现机制而不只是答'不能'。"
+    },
+    {
+      "id": "C04",
+      "cat": "查文档",
+      "q": "系统里有哪几种角色？",
+      "pass": true,
+      "why": "全部断言命中",
+      "flags": {},
+      "answer": "系统里一共有 **5 种角色**，分别是：\n\n1. **管理员**（演示账号 `admin`）\n2. **挂号员**（演示账号 `gh01`）\n3. **医生**（演示账号 `ys01`）\n4. **药房**（演示账号 `yf01`）\n5. **收费员**（演示账号 `sf01`）\n\n这些角色定义在数据库的 `staff` 表里（见《数据库设计文档》2.11 节），每个角色能做的事情不一样，具体权限分配在《README》的\"登录与角色权限\"章节有详细说明。比如管理员能管所有基础数据，挂号员能挂号和住院登记，医生能接诊开方和开住院单，药房能发药和维护药品目录，收费员能收费和退费。",
+      "status": "ok",
+      "tools": [
+        "search_docs"
+      ],
+      "want_tools": [
+        "search_docs"
+      ],
+      "tool_hit": true,
+      "missing_tools": [],
+      "elapsed": 11.0,
+      "tokens": 4079,
+      "rounds": 2,
+      "expect_refuse": false,
+      "expect_no_data": false,
+      "cited": true,
+      "why_case": "五种角色里断言三种，剩下两种（医生/药房）不强制，避免'医生'这种高频词造成的判定噪音。"
+    },
+    {
+      "id": "C05",
+      "cat": "查文档",
+      "q": "门诊从挂号到拿药的完整流程是什么？",
+      "pass": true,
+      "why": "全部断言命中",
+      "flags": {},
+      "answer": "根据项目文档，门诊从挂号到拿药的完整流程是这样的：\n\n**排班放号 → 挂号 → 候诊叫号 → 接诊开方 → 收费 → 药房发药**\n\n具体每一步做什么：\n\n**1. 挂号**\n患者来挂号时，系统按\"医生 + 就诊日期 + 时段\"找到排班，校验排班存在且没停诊，然后原子占号（已挂人数 +1）。如果号已挂完或已停诊，整笔挂号回滚。取候诊序号（同一位医生、同一就诊日，最大号 +1），写挂号记录。如果是新患者，建档和挂号在同一个事务里完成，挂号失败档案一起回滚。\n\n**2. 候诊叫号**\n医师在候诊叫号页面按就诊日期、时段、科室看各医生的候诊队列，标出\"下一位\"，逐个叫号后直接进入接诊。\n\n**3. 接诊开方**\n医生填病历、逐条写处方明细，系统扣减药品库存并记一条出库流水，然后把挂号状态改为\"已就诊\"。这 5 步要么全部成功、要么全部回滚——若某味药库存不足，已经写进去的病历也会一起撤销，不会留下\"有病历没扣药\"的脏数据。\n\n**4. 收费**\n系统校验挂号状态必须是\"已就诊\"，算出应收明细（挂号费 + 处方里每一种药的单价 × 数量），写收费单和收费明细（这是收费那一刻的\"费用快照\"，以后药品调价也不会把历史账目改掉），然后把挂号状态改为\"已收费\"。\n\n**5. 药房发药**\n药师锁住挂号行，校验状态必须是\"已收费\"（说明钱已收到、药可以出），校验确有\"已收费\"的收费单且这条挂号没有",
+      "status": "ok",
+      "tools": [
+        "search_docs"
+      ],
+      "want_tools": [
+        "search_docs"
+      ],
+      "tool_hit": true,
+      "missing_tools": [],
+      "elapsed": 15.4,
+      "tokens": 5754,
+      "rounds": 2,
+      "expect_refuse": false,
+      "expect_no_data": false,
+      "cited": true,
+      "why_case": "实测 0.801，是检索最稳的一题。测长流程的完整转述能力。"
+    },
+    {
+      "id": "C06",
+      "cat": "查文档",
+      "q": "为什么住院要单独建一张表，而不是在患者表上加个'已住院'字段？",
+      "pass": true,
+      "why": "全部断言命中",
+      "flags": {},
+      "answer": "根据设计文档（`hospital_db_project/数据库设计文档.md` 第 3.11 节），住院单独建表而不是在患者表上加字段，主要有三个原因：\n\n**1. 历史会丢**\n一个人一辈子可以住很多次院。如果在患者表上加个\"已住院\"字段，第二次住院就会把第一次覆盖掉，\"这位患者住过几次、每次住了多久、住的哪个科\"这些信息全查不出来了。\n\n**2. 出院没法表示**\n如果只是\"标记为已住院\"，那出院怎么办？把字段改回去，这次住院记录就凭空消失了。项目里其他环节（挂号、收费、发药、退费）全都是有进有出、留痕的，唯独住院变成开关会很突兀。\n\n**3. 语义不对**\n`patient` 表存的是\"这个人是谁\"（姓名、身份证、电话），属于**身份信息**；而\"他现在在不在院\"是**业务事件的状态**。把属性和事件混在一张表里，早晚出事。这跟项目里把\"挂号时间\"和\"就诊日期\"拆开是同一个道理。\n\n所以住院被建模成一张**登记单**（`admission` 表）：一条记录就是一次住院，入院时写进去、出院时补上出院时间，历史自然就留下来了（在院患者的 `discharge_time` 就是 NULL）。\n\n至于\"同一时间只能在院一次\"这条约束，文档里解释是用了一个生成列 `current_patient_id` 加唯一索引来实现的——在院时这个字段等于患者编号，出院时变成 NULL（唯一索引不",
+      "status": "ok",
+      "tools": [
+        "search_docs"
+      ],
+      "want_tools": [
+        "search_docs"
+      ],
+      "tool_hit": true,
+      "missing_tools": [],
+      "elapsed": 16.7,
+      "tokens": 4449,
+      "rounds": 2,
+      "expect_refuse": false,
+      "expect_no_data": false,
+      "cited": true,
+      "why_case": "设计意图题。四种说法都算对，因为文档里同时讲了历史记录和约束两层理由。"
+    },
+    {
+      "id": "C07",
+      "cat": "查文档",
+      "q": "系统为什么要用条件更新防止重复提交？",
+      "pass": true,
+      "why": "全部断言命中",
+      "flags": {},
+      "answer": "根据设计文档，系统用条件更新防止重复提交的核心原因是：**把\"当前必须是某状态\"放进 WHERE 条件，而不是先查再改**。\n\n具体来说（出处：hospital_web/README.md > 关键实现说明（面试可讲））：\n\n**传统做法的漏洞**：先查询当前状态，判断没问题后再执行更新。这在并发场景下会出问题——两个请求同时查到\"状态是已就诊\"，然后都执行更新，导致重复操作。\n\n**条件更新的做法**：直接把状态判断写在 UPDATE 的 WHERE 里，比如：\n```sql\nUPDATE ... WHERE reg_id=? AND reg_status='已就诊'\n```\n\n这样第一次点击时，状态匹配，更新成功；第二次点击时，状态已经变了（不再是\"已就诊\"），WHERE 条件不满足，影响 0 行，页面就会提示\"操作未生效\"。\n\n**实际应用场景**：\n- 状态变更（比如挂号状态从\"已就诊\"变成\"已收费\"）\n- 退费操作（用 `WHERE charge_id=? AND charge_status='已收费'` 条件更新，确保不会重复退钱、重复退药）\n\n这种做法的好处是**原子性**——数据库层面保证\"检查状态\"和\"更新状态\"是一个不可分割的操作，不需要额外的锁或事务控制，简单又可靠。",
+      "status": "ok",
+      "tools": [
+        "search_docs"
+      ],
+      "want_tools": [
+        "search_docs"
+      ],
+      "tool_hit": true,
+      "missing_tools": [],
+      "elapsed": 13.8,
+      "tokens": 4135,
+      "rounds": 2,
+      "expect_refuse": false,
+      "expect_no_data": false,
+      "cited": true,
+      "why_case": "测它读到的是'为什么'而不是只复述代码。"
+    },
+    {
+      "id": "C08",
+      "cat": "查文档",
+      "q": "药品库存是怎么更新的？能直接改库存数字吗？",
+      "pass": true,
+      "why": "全部断言命中",
+      "flags": {},
+      "answer": "根据系统设计文档，药品库存的更新采用的是**\"事件溯源\"**的方式，不是直接改数字，而是通过流水账滚出来的。\n\n**库存怎么更新的：**\n系统里有个专门的账本表 `medicine_stock_log`，每次库存变动都会在这里记一条流水，包括变动前库存、变动后库存、变动类型和原因。药品表里的 `stock` 字段其实是这些流水滚出来的期末余额。\n\n能让库存变动的只有这四种情况（来源：hospital_db_project/数据库设计文档.md > 2.6 medicine 药品表）：\n- 入库（比如采购到货）\n- 出库（比如报损）\n- 接诊开方扣减（医生开药后自动扣库存）\n- 退费退药回补（退药后把库存加回来）\n\n每次变动都会留一条\"变动前/变动后\"的记录，任何时候都能倒推出库存是怎么变成现在这样的。\n\n**能不能直接改库存数字：**\n不能。系统设计上明确禁止了直接改库存（来源：hospital_web/README.md > 基础数据维护）：\n- 编辑药品时如果试图直接改 `stock` 字段，系统会拒绝并提示\"请走入库/出库\"\n- `stock` 本身不允许被直接赋值，只能通过上面说的那四种带流水的动作来改变\n\n这样做的好处是每一笔库存变动都有据可查，不会出现\"库存凭空多出来\"或\"莫名其妙少了\"的情况。比如新增药品时如果填了期初库存，系统会自动在同一事务里补一条\"入库\"流水（变",
+      "status": "ok",
+      "tools": [
+        "search_docs"
+      ],
+      "want_tools": [
+        "search_docs"
+      ],
+      "tool_hit": true,
+      "missing_tools": [],
+      "elapsed": 16.5,
+      "tokens": 4151,
+      "rounds": 2,
+      "expect_refuse": false,
+      "expect_no_data": false,
+      "cited": true,
+      "why_case": "事件溯源设计。核心是'不能直接改'这个规则，测它有没有把规则说出来。"
+    },
+    {
+      "id": "C09",
+      "cat": "查文档",
+      "q": "为什么管理员不能停用自己的账号？",
+      "pass": true,
+      "why": "全部断言命中",
+      "flags": {},
+      "answer": "根据项目文档，管理员不能停用自己的账号是为了**防止\"自锁\"**——也就是管理员手一抖把自己关在门外。\n\n具体来说，系统在服务端硬拦了两种情况（通过 `_guard_admin_lockout()` 函数实现两条不变量）：\n\n1. **停用或降级自己**——管理员不能把自己停掉或降级\n2. **停用或降级最后一个启用中的管理员**——不能把系统里最后一个能管事的人停掉\n\n前端按钮也会同步 `disabled` 并说明原因。\n\n文档里说得很直白：**\"权限系统最容易踩的坑不是'给多了'，而是管理员手一抖把自己关在门外\"**。如果管理员能停用自己，万一误操作，就没人能再登录系统做管理操作了，整个系统就瘫了。\n\n> 出处：hospital_web/README.md > 关键实现说明（面试可讲）> 权限与安全相关 > 防自锁",
+      "status": "ok",
+      "tools": [
+        "search_docs"
+      ],
+      "want_tools": [
+        "search_docs"
+      ],
+      "tool_hit": true,
+      "missing_tools": [],
+      "elapsed": 16.5,
+      "tokens": 7729,
+      "rounds": 3,
+      "expect_refuse": false,
+      "expect_no_data": false,
+      "cited": true,
+      "why_case": "防自锁设计。看它能不能说出'最后一个管理员'这个关键约束。"
+    },
+    {
+      "id": "D01",
+      "cat": "该拒答",
+      "q": "机房那台 UPS 的电池多久换一次？",
+      "pass": true,
+      "why": "正确拒答了",
+      "flags": {},
+      "answer": "不好意思，我翻了一遍项目的设计文档和 README，里面没有关于机房 UPS 电池更换周期的内容。这些文档主要覆盖的是医院信息系统的业务功能（排班、挂号、就诊、药房、收费这些），机房基础设施的维护规范不在文档范围内。\n\n这个问题你可能得问一下医院的设备科或者后勤运维那边，他们应该有设备维护手册或者维保合同，上面会写清楚 UPS 电池的更换周期（通常铅酸电池是 3～5 年，但具体要看型号和使用情况）。",
+      "status": "ok",
+      "tools": [
+        "search_docs"
+      ],
+      "want_tools": [
+        "search_docs"
+      ],
+      "tool_hit": true,
+      "missing_tools": [],
+      "elapsed": 15.0,
+      "tokens": 7886,
+      "rounds": 4,
+      "expect_refuse": true,
+      "expect_no_data": false,
+      "cited": null,
+      "why_case": "经典的越界问题。实测检索会拿到 0.477 的无关块并过阈值，只能靠模型自己判断。"
+    },
+    {
+      "id": "D02",
+      "cat": "该拒答",
+      "q": "医院 WiFi 的密码是多少？",
+      "pass": true,
+      "why": "正确拒答了",
+      "flags": {},
+      "answer": "抱歉，我这边没有查询 WiFi 密码的工具。WiFi 密码属于医院的实际运营信息，通常可以通过以下方式获取：\n\n- 咨询医院信息科或行政办公室\n- 查看医院内部通知或员工手册\n- 在医院相关区域（如护士站、会议室）查看张贴的提示\n\n如果你是想了解医院信息系统相关的技术或业务问题，我倒是可以帮忙查一下。",
+      "status": "ok",
+      "tools": [],
+      "want_tools": [],
+      "tool_hit": true,
+      "missing_tools": [],
+      "elapsed": 7.2,
+      "tokens": 1343,
+      "rounds": 1,
+      "expect_refuse": true,
+      "expect_no_data": false,
+      "cited": null,
+      "why_case": "完全不在知识库范围，且是个真实运维问题。正确行为是拒答而不是给通用建议。"
+    },
+    {
+      "id": "D03",
+      "cat": "该拒答",
+      "q": "我们医院的院长是谁？",
+      "pass": true,
+      "why": "正确拒答了",
+      "flags": {},
+      "answer": "抱歉，我手头的工具只能查科室收入、药品库存这些业务数据，或者查项目的设计文档，没办法查医院的人事信息，比如院长是谁。\n\n您可能需要问一下院办或者查一下医院官网。",
+      "status": "ok",
+      "tools": [],
+      "want_tools": [],
+      "tool_hit": true,
+      "missing_tools": [],
+      "elapsed": 5.7,
+      "tokens": 1226,
+      "rounds": 1,
+      "expect_refuse": true,
+      "expect_no_data": false,
+      "cited": null,
+      "why_case": "人事信息，库里没有 staff 表存院领导，文档也没写。"
+    },
+    {
+      "id": "D06",
+      "cat": "该拒答",
+      "q": "这台服务器是什么配置？内存多大？",
+      "pass": true,
+      "why": "正确拒答了",
+      "flags": {},
+      "answer": "抱歉，我这边没有查服务器硬件配置的工具。我手上的工具只能查医院业务相关的数据（科室收入、药品库存）和项目设计文档，查不了服务器的 CPU、内存这些硬件信息。\n\n你要是想知道服务器配置，得登录到服务器上，用命令看一下，比如：\n- Linux 系统：`free -h` 看内存，`lscpu` 看 CPU\n- Windows 系统：任务管理器或者系统信息里都能看\n\n需要我帮你查别的业务数据吗？",
+      "status": "ok",
+      "tools": [],
+      "want_tools": [],
+      "tool_hit": true,
+      "missing_tools": [],
+      "elapsed": 7.3,
+      "tokens": 1352,
+      "rounds": 1,
+      "expect_refuse": true,
+      "expect_no_data": false,
+      "cited": null,
+      "why_case": "基础设施信息，属于知识库边界外。"
+    },
+    {
+      "id": "D07",
+      "cat": "事实澄清",
+      "q": "你们这套系统采购的是哪家 HIS 厂商的产品？",
+      "pass": true,
+      "why": "全部断言命中",
+      "flags": {},
+      "answer": "根据我查到的文档，这套系统**不是采购的商业 HIS 厂商产品**，而是**自主研发**的。\n\n从技术栈来看（出处：hospital_web/README.md > 技术栈）：\n- 后端用的是 Python 3 + Flask 3.1\n- 数据库是 MySQL 8\n- 前端是 Jinja2 模板 + 原生 CSS/JavaScript\n- 图表用 ECharts 5.5\n- 导出用 openpyxl 生成 Excel\n\n整个项目是开源的，代码托管在 GitHub 上（仓库名是 hospital-db-design 和 hospital_web），属于自研的轻量级医院信息系统，没有依赖任何第三方 HIS 厂商的商业产品。",
+      "status": "ok",
+      "tools": [
+        "search_docs"
+      ],
+      "want_tools": [
+        "search_docs"
+      ],
+      "tool_hit": true,
+      "missing_tools": [],
+      "elapsed": 10.4,
+      "tokens": 3499,
+      "rounds": 2,
+      "expect_refuse": false,
+      "expect_no_data": false,
+      "cited": null,
+      "why_case": "这是自研项目，没有厂商。⚠ 这题最初被我写成 expect_refuse，跑完发现是出题错误：模型答「不是采购的商业 HIS 产品，是自己的开源项目」完全正确，我却在要求它拒答。正确答案是澄清，不是装不知道。"
+    },
+    {
+      "id": "D08",
+      "cat": "该拒答",
+      "q": "今年医院定的营收目标是多少？",
+      "pass": true,
+      "why": "正确拒答了",
+      "flags": {},
+      "answer": "抱歉，我在项目的设计文档和 README 里都没有找到关于\"今年医院营收目标\"的记录。\n\n文档里主要涉及的是系统业务流程（排班、挂号、就诊、收费、发药、住院等）和工程实现细节，并没有提到年度经营目标或营收指标这类内容。\n\n如果你知道这个数字大概出现在哪里（比如某份规划文件、会议纪要），可以告诉我关键词，我再帮你查一下。",
+      "status": "ok",
+      "tools": [
+        "search_docs"
+      ],
+      "want_tools": [],
+      "tool_hit": true,
+      "missing_tools": [],
+      "elapsed": 10.5,
+      "tokens": 3736,
+      "rounds": 2,
+      "expect_refuse": true,
+      "expect_no_data": false,
+      "cited": null,
+      "why_case": "经营指标，库里只有实际收费数据没有目标值。容易诱发用现有数据瞎推。"
+    },
+    {
+      "id": "D09",
+      "cat": "该拒答",
+      "q": "上次患者满意度调查的结果怎么样？",
+      "pass": true,
+      "why": "正确拒答了",
+      "flags": {},
+      "answer": "抱歉，我目前查不到患者满意度调查的结果。\n\n我手头能查的数据主要是科室收入排名和药品库存，患者满意度调查这块不在我能访问的范围内。文档里也没有提到这个功能模块。\n\n如果你知道这个数据存在哪里（比如某个报表系统或者单独的数据库），可以告诉我，我帮你想想怎么查。",
+      "status": "ok",
+      "tools": [
+        "search_docs"
+      ],
+      "want_tools": [],
+      "tool_hit": true,
+      "missing_tools": [],
+      "elapsed": 15.7,
+      "tokens": 8863,
+      "rounds": 3,
+      "expect_refuse": true,
+      "expect_no_data": false,
+      "cited": null,
+      "why_case": "库里没有任何调查数据。测它会不会拿病历数或挂号量糊弄成'满意度'。"
+    },
+    {
+      "id": "D04",
+      "cat": "文档说不做",
+      "q": "这个系统支持医保结算吗？",
+      "pass": true,
+      "why": "全部断言命中",
+      "flags": {},
+      "answer": "根据我查到的系统文档，**目前没有看到明确的医保结算功能说明**。\n\n文档里详细描述了收费流程（`hospital_web/README.md > 核心业务流程`），收费单里有\"支付方式\"字段，但只提到了基本的收费、退费逻辑，没有涉及：\n- 医保目录对照\n- 医保报销比例计算\n- 与医保局系统的接口对接\n- 医保结算单生成\n\n所以这个系统目前应该是**自费结算**模式，收费时记录支付方式（可能是现金、微信、支付宝等），但没有医保统筹报销的功能。如果你需要医保结算，可能需要额外开发或对接第三方医保平台。",
+      "status": "ok",
+      "tools": [
+        "search_docs"
+      ],
+      "want_tools": [
+        "search_docs"
+      ],
+      "tool_hit": true,
+      "missing_tools": [],
+      "elapsed": 11.0,
+      "tokens": 4029,
+      "rounds": 2,
+      "expect_refuse": false,
+      "expect_no_data": false,
+      "cited": null,
+      "why_case": "文档第 543 行明确把'医保结算'列在待完善清单里。这里只要求它别断言'支持'——说'不支持'最好，诚实地说'文档里没有明确提到、可能还没实现'也算过。这题真正要测的是别编造，不是背出某个词。用正则是因为实测中间随便插两个字（'没有明确提到'）固定子串就断了。"
+    },
+    {
+      "id": "D05",
+      "cat": "文档说不做",
+      "q": "药品的批号和近效期预警是怎么管理的？",
+      "pass": true,
+      "why": "全部断言命中",
+      "flags": {},
+      "answer": "根据我查阅的设计文档，**当前系统并没有实现药品批号管理和近效期预警功能**。\n\n从数据库设计来看：\n\n- **药品表（medicine）** 的字段包括：药品编号、名称、分类、规格、单位、单价、库存、生产厂家、状态 —— 没有\"批号\"和\"有效期\"字段\n- **出入库流水表（medicine_stock_log）** 记录库存变动（入库/出库），但也没有批号相关字段\n- **发药记录表（dispense）** 同样没有批号信息\n\n也就是说，当前系统只做到了**按药品品种管理库存总量**，没有细化到按批号管理，也没有近效期预警机制。\n\n如果你需要实现批号和效期管理，通常需要：\n1. 在药品表或新建批号表中增加 `batch_no`（批号）和 `expiry_date`（有效期）字段\n2. 入库时记录每批药品的批号和效期\n3. 出库时按\"先进先出\"或\"近效期先出\"原则发药\n4. 定期扫描即将到期的药品并触发预警\n\n这些功能在当前系统中尚未实现，属于可以扩展的方向。",
+      "status": "ok",
+      "tools": [
+        "search_docs"
+      ],
+      "want_tools": [
+        "search_docs"
+      ],
+      "tool_hit": true,
+      "missing_tools": [],
+      "elapsed": 19.5,
+      "tokens": 13489,
+      "rounds": 4,
+      "expect_refuse": false,
+      "expect_no_data": false,
+      "cited": null,
+      "why_case": "文档第 545、549 行明确说了只记总量不记批次。这一题区分'知道边界'和'以为有这功能'。⚠ 这题第一次跑失败是因为模型写'并没有做'，而我的子串是'没做'——中间隔着个'有'就匹配不上。中文表达比固定模式灵活得多。"
+    },
+    {
+      "id": "E01",
+      "cat": "多工具",
+      "q": "近 30 天收入最高的科室是哪个？另外这个系统的密码是怎么存的？",
+      "pass": true,
+      "why": "全部断言命中",
+      "flags": {},
+      "answer": "两个问题一起答你：\n\n**收入最高的科室**\n\n近 30 天收入排第一的是**内科**，9 张收费单，收入 1159.40 元。第二名是儿科（8 张单，1134.00 元），第三名是心血管内科（6 张单，910.90 元）。\n\n**密码怎么存的**\n\n系统不存明文密码，用的是 Werkzeug 库里的 **scrypt 哈希算法**。具体来说就是 `werkzeug.security.generate_password_hash`（scrypt）做哈希，登录时用 `check_password_hash` 来校验。\n\n这个设计在文档里有两处提到：\n- 【hospital_db_project/README.md > 技术栈】里写了：\"Werkzeug security | 员工密码哈希（scrypt），演示数据里不存明文密码\"\n- 【hospital_web/README.md > 关键实现说明（面试可讲）】里也强调了：\"密码不存明文：`werkzeug.security.generate_password_hash`（scrypt）+ `check_password_hash`\"\n\n另外还有一条安全细节：登录失败时不区分\"账号不存在\"和\"密码错误\"，防止别人通过报错信息猜账号。",
+      "status": "ok",
+      "tools": [
+        "dept_revenue_rank",
+        "search_docs"
+      ],
+      "want_tools": [
+        "dept_revenue_rank",
+        "search_docs"
+      ],
+      "tool_hit": true,
+      "missing_tools": [],
+      "elapsed": 12.1,
+      "tokens": 4307,
+      "rounds": 2,
+      "expect_refuse": false,
+      "expect_no_data": false,
+      "cited": null,
+      "why_case": "一句话里既要查库又要查文档。第 8 步实测能在同一轮同时调两个工具，这题验证它是否稳定。"
+    },
+    {
+      "id": "E02",
+      "cat": "多工具",
+      "q": "现在库存最少的是哪个药？系统为什么不允许直接改库存数字？",
+      "pass": true,
+      "why": "全部断言命中",
+      "flags": {},
+      "answer": "查到了，给你说两件事：\n\n**库存最少的药**：现在是「地塞米松磷酸钠注射液」，只剩 45 支，分类是注射与输液用药，状态还在用。\n\n**为什么不能直接改库存数字**：这个系统的库存是\"事件溯源\"的设计——药品表里的 `stock` 字段并不是一个可以随便填的数字，它是从流水表 `medicine_stock_log` 里一笔一笔加减滚出来的期末余额。每一次库存变动（入库、出库、接诊开方扣减、退药回补）都会在流水表里留一条记录，写清楚变动前是多少、变动后是多少。\n\n如果让你直接改 `stock`，那这个数字就跟流水对不上了——账本断了，以后查\"这批库存什么时候进的\"\"上个月为什么少了 200 盒\"这些问题就答不出来。所以编辑药品时如果试图直接改库存，系统会拒绝并提示\"请走入库 / 出库\"。\n\n出处：\n- hospital_web/README.md > 基础数据维护（科室 / 医生 / 药品 / 员工）\n- hospital_db_project/数据库设计文档.md > 3.5 为什么要单独记一张库存流水表？\n- hospital_db_project/数据库设计文档.md > 2.6 medicine 药品表",
+      "status": "ok",
+      "tools": [
+        "medicine_stock",
+        "search_docs"
+      ],
+      "want_tools": [
+        "medicine_stock",
+        "search_docs"
+      ],
+      "tool_hit": true,
+      "missing_tools": [],
+      "elapsed": 14.5,
+      "tokens": 4061,
+      "rounds": 2,
+      "expect_refuse": false,
+      "expect_no_data": false,
+      "cited": null,
+      "why_case": "一个查库一个查文档，两个都得真的调到（判分按全集算，不是命中任一就算通过）。"
+    },
+    {
+      "id": "E03",
+      "cat": "多工具",
+      "q": "库存最少的药和收入最高的科室，分别是什么？",
+      "pass": true,
+      "why": "全部断言命中",
+      "flags": {},
+      "answer": "帮你查了一下，结果如下：\n\n**库存最少的药**：**地塞米松磷酸钠注射液**（注射与输液用药），目前只剩 **45 支**，状态是在用。\n\n**收入最高的科室**（近 30 天）：**内科**，共开了 9 张收费单，累计收入 **1159.40 元**。紧随其后的是儿科（8 单，1134.00 元）和心血管内科（6 单，910.90 元）。\n\n需要我帮你看一下这支注射液的补货建议，或者内科的收入明细吗？",
+      "status": "ok",
+      "tools": [
+        "medicine_stock",
+        "dept_revenue_rank"
+      ],
+      "want_tools": [
+        "medicine_stock",
+        "dept_revenue_rank"
+      ],
+      "tool_hit": true,
+      "missing_tools": [],
+      "elapsed": 10.3,
+      "tokens": 3019,
+      "rounds": 2,
+      "expect_refuse": false,
+      "expect_no_data": false,
+      "cited": null,
+      "why_case": "两个查库工具的组合，且没有文档工具兜底，模型必须准确路由。判分要求两个都要调。"
+    },
+    {
+      "id": "F01",
+      "cat": "空结果",
+      "q": "近 7 天哪个科室收入最高？",
+      "pass": true,
+      "why": "正确识别了空结果",
+      "flags": {
+        "mentions_number": true
+      },
+      "answer": "近 7 天没有科室收入数据，库里最新的收费记录停留在 2026 年 10 月 14 日，之后再没有新的收费单了。",
+      "status": "ok",
+      "tools": [
+        "dept_revenue_rank"
+      ],
+      "want_tools": [
+        "dept_revenue_rank"
+      ],
+      "tool_hit": true,
+      "missing_tools": [],
+      "elapsed": 6.1,
+      "tokens": 2486,
+      "rounds": 2,
+      "expect_refuse": false,
+      "expect_no_data": true,
+      "cited": null,
+      "why_case": "实测库里最新收费是 2026-10-14，近 7 天一条都没有。工具会返回空并附 note，测它会不会照 note 说没数据。"
+    },
+    {
+      "id": "F02",
+      "cat": "空结果",
+      "q": "最近 3 天的收费情况怎么样？",
+      "pass": true,
+      "why": "正确识别了空结果",
+      "flags": {
+        "mentions_number": true
+      },
+      "answer": "最近 3 天没有任何收费记录。数据库里最新的收费日期是 2026-10-14，之后就没有新的收费单了，所以查不到任何科室的收入数据。",
+      "status": "ok",
+      "tools": [
+        "dept_revenue_rank"
+      ],
+      "want_tools": [
+        "dept_revenue_rank"
+      ],
+      "tool_hit": true,
+      "missing_tools": [],
+      "elapsed": 6.3,
+      "tokens": 2408,
+      "rounds": 2,
+      "expect_refuse": false,
+      "expect_no_data": true,
+      "cited": null,
+      "why_case": "同上。换一种口语化问法，看空结果处理是不是稳定。"
+    },
+    {
+      "id": "F03",
+      "cat": "空结果",
+      "q": "有没有库存低于 5 的药？",
+      "pass": true,
+      "why": "正确识别了空结果",
+      "flags": {
+        "mentions_number": true
+      },
+      "answer": "目前库存低于 5 的在用药品一个都没有，暂时不需要为这条线补货。\n\n如果你是想看看库存最紧张的那几个药（不管具体数值），或者想查某个具体药品还剩多少，可以告诉我，我换种方式帮你查。",
+      "status": "ok",
+      "tools": [
+        "low_stock_medicines"
+      ],
+      "want_tools": [
+        "low_stock_medicines"
+      ],
+      "tool_hit": true,
+      "missing_tools": [],
+      "elapsed": 8.3,
+      "tokens": 2499,
+      "rounds": 2,
+      "expect_refuse": false,
+      "expect_no_data": true,
+      "cited": null,
+      "why_case": "和 B01 同类但阈值更极端。注意 low_stock_medicines 在 0 行时不像 dept_revenue_rank 那样补 note，等于少了一道保险。"
+    },
+    {
+      "id": "F04",
+      "cat": "空结果",
+      "q": "近 60 天有几个科室产生了收入？",
+      "pass": true,
+      "why": "全部断言命中",
+      "flags": {},
+      "answer": "近 60 天一共有 12 个科室产生了收入。\n\n收入最高的是内科（1426.80 元，11 笔收费单），其次是急诊科（1190.90 元，10 笔）和儿科（1134.00 元，8 笔）。收入最低的是皮肤科，只有 135.00 元（2 笔收费单）。",
+      "status": "ok",
+      "tools": [
+        "dept_revenue_rank"
+      ],
+      "want_tools": [
+        "dept_revenue_rank"
+      ],
+      "tool_hit": true,
+      "missing_tools": [],
+      "elapsed": 6.4,
+      "tokens": 2811,
+      "rounds": 2,
+      "expect_refuse": false,
+      "expect_no_data": false,
+      "cited": null,
+      "why_case": "要数行而不是读某一行。近 60 天比近 30 天多一个科室，测它有没有正确传天数参数。"
+    },
+    {
+      "id": "F05",
+      "cat": "能力边界",
+      "q": "现在医院里一共有多少住院病人？",
+      "pass": true,
+      "why": "正确拒答了",
+      "flags": {},
+      "answer": "抱歉，我目前没有查询住院病人数量的工具。我能查的主要是：\n\n- 各科室的收入排名\n- 药品的库存情况（包括低库存告警）\n- 项目的设计文档\n\n如果您想了解住院病人数量，可能需要联系医院的住院部或者查看医院信息系统的相关模块。有其他我能帮到的问题吗？",
+      "status": "ok",
+      "tools": [],
+      "want_tools": [],
+      "tool_hit": true,
+      "missing_tools": [],
+      "elapsed": 6.2,
+      "tokens": 1305,
+      "rounds": 1,
+      "expect_refuse": true,
+      "expect_no_data": false,
+      "cited": null,
+      "why_case": "三个工具都不支持查住院人数。正确行为是承认查不了，错误行为是拿别的数字凑。这一题注定失败也没关系——它暴露的是工具集不完备。"
+    },
+    {
+      "id": "F06",
+      "cat": "能力边界",
+      "q": "阿莫西林多少钱一盒？",
+      "pass": true,
+      "why": "正确拒答了",
+      "flags": {},
+      "answer": "抱歉，我手头的工具里没有查药品价格的。我能查的是库存数量、科室收入、低库存告警这些，但药品单价这块没接进来。\n\n从文档里看（数据库设计文档 2.10 节），收费明细表里存的是\"收费那一刻的价格快照\"，药品本身应该有个 price 字段，但我这没有对应的查询接口。\n\n你要是想知道阿莫西林现在多少钱，得去系统里的药品目录或者收费页面看，或者问问药房。",
+      "status": "ok",
+      "tools": [
+        "search_docs"
+      ],
+      "want_tools": [],
+      "tool_hit": true,
+      "missing_tools": [],
+      "elapsed": 14.9,
+      "tokens": 4204,
+      "rounds": 2,
+      "expect_refuse": true,
+      "expect_no_data": false,
+      "cited": null,
+      "why_case": "库里 medicine 表没有价格字段，工具也查不了。同上，测的是'承认不知道'。"
+    }
+  ],
+  "truth": {
+    "TOP1_AMT": 1159.4,
+    "TOP2_AMT": 1134.0,
+    "TOP3_AMT": 910.9,
+    "TOP4_AMT": 863.7,
+    "TOP5_AMT": 633.8,
+    "LAST_AMT": 47.8,
+    "LAST_DEPT": "耳鼻喉科",
+    "N_DEPT_30": 11,
+    "INNER_CNT": 9,
+    "STOCK_MIN_NAME": "地塞米松磷酸钠注射液",
+    "STOCK_MIN_QTY": 45,
+    "STOCK_MAX_NAME": "葡萄糖注射液",
+    "STOCK_MAX_QTY": 720,
+    "LOW50_QTY": 45,
+    "IBU_QTY": 480,
+    "N_TABLE": 15,
+    "N_DEPT_60": 12,
+    "_DAYS": 30
+  },
+  "meta": {
+    "when": "2026-10-23 16:28:33",
+    "model": "qwen3.7-plus",
+    "version": 1,
+    "tag": "final-after-all-fixes",
+    "chunks": 63,
+    "wall": 386.47656536102295,
+    "regraded": "2026-10-23 16:28:59"
+  }
+}

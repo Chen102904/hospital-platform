@@ -1,0 +1,326 @@
+/* ============================================================
+   HIS 智能助手 · 全部样式
+   零依赖，不引任何 CDN —— 面试现场网络不好也能正常显示。
+   ============================================================ */
+:root{
+  --ink:#16202a; --ink2:#364b5c; --muted:#6b7a89; --faint:#8b9aa8;
+  --line:#e3e8ee; --line2:#eef2f6; --bg:#f4f7f9; --card:#fff;
+  --brand:#0f766e; --brand2:#14b8a6; --brand-dk:#0b6159;
+  --soft:#e6f4f1; --soft2:#f4fbf9;
+  --warn:#b45309; --warn-bg:#fef6e7;
+  --bad:#b91c1c; --bad-bg:#fdeaea;
+  --side:266px;
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0; background:var(--bg); color:var(--ink);
+  font:14px/1.75 -apple-system,"Segoe UI","Microsoft YaHei",system-ui,sans-serif;
+  -webkit-font-smoothing:antialiased;
+}
+a{color:inherit;text-decoration:none}
+button{font:inherit}
+::-webkit-scrollbar{width:9px;height:9px}
+::-webkit-scrollbar-thumb{background:#d3dce4;border-radius:9px}
+::-webkit-scrollbar-thumb:hover{background:#c0ccd8}
+
+/* ── 外壳：左固定侧栏 + 右自适应主区 ── */
+.app{display:grid;grid-template-columns:var(--side) 1fr;height:100vh;overflow:hidden}
+.main{display:flex;flex-direction:column;min-width:0;height:100vh;position:relative}
+
+/* ── 侧栏 ── */
+.side{
+  background:var(--card);border-right:1px solid var(--line);
+  display:flex;flex-direction:column;min-height:0;
+}
+.brand{display:flex;gap:11px;align-items:center;padding:18px 16px 14px}
+.logo{
+  width:36px;height:36px;border-radius:11px;flex:0 0 auto;
+  background:linear-gradient(135deg,#0f766e,#14b8a6);color:#fff;
+  display:grid;place-items:center;font-weight:700;font-size:16px;
+  box-shadow:0 2px 8px rgba(15,118,110,.28);
+}
+.brand .bt{font-size:13.5px;font-weight:650;letter-spacing:.2px;line-height:1.4}
+.brand .bs{font-size:11.5px;color:var(--faint);line-height:1.4}
+
+.new{
+  margin:0 12px 14px;padding:9px 12px;border-radius:10px;
+  border:1px dashed #cfe0dd;background:var(--soft2);color:var(--brand-dk);
+  font-size:13px;font-weight:600;text-align:center;transition:.15s;
+}
+.new:hover{background:var(--soft);border-color:var(--brand2)}
+
+.side-label{
+  padding:0 18px 6px;font-size:11px;letter-spacing:.6px;color:#a3b0bc;
+  text-transform:uppercase;
+}
+.slist{flex:1;overflow-y:auto;padding:0 8px 10px;min-height:0}
+.sitem{
+  display:block;padding:8px 10px;border-radius:9px;margin-bottom:2px;
+  border-left:2px solid transparent;transition:.13s;
+}
+.sitem:hover{background:#f5f8fa}
+.sitem.on{background:var(--soft);border-left-color:var(--brand)}
+.sitem .st{
+  display:block;font-size:12.8px;color:var(--ink2);line-height:1.5;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+.sitem.on .st{color:var(--brand-dk);font-weight:600}
+.sitem .sm{display:block;font-size:11px;color:#a3b0bc;margin-top:1px}
+.side .empty{padding:6px 18px;font-size:12px;color:#b3bfc9;margin:0}
+
+.side-foot{
+  border-top:1px solid var(--line2);padding:11px 16px;
+  display:flex;gap:12px;align-items:center;font-size:12px;color:var(--muted);
+}
+.side-foot a:hover{color:var(--brand)}
+.side-foot .dot{width:5px;height:5px;border-radius:50%;background:#34d399;flex:0 0 auto}
+
+/* ── 顶栏 ── */
+.topbar{
+  padding:13px 24px;background:var(--card);border-bottom:1px solid var(--line);
+  display:flex;align-items:center;gap:12px;flex-wrap:wrap;flex:0 0 auto;
+}
+.topbar .ht{font-size:14.5px;font-weight:650;line-height:1.5;min-width:0;
+            overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:46vw}
+.topbar .hs{font-size:11.5px;color:var(--faint);margin-top:1px}
+.topbar .sp{margin-left:auto;display:flex;gap:7px;align-items:center;flex-wrap:wrap}
+.tag{
+  font-size:11.5px;padding:3px 9px;border-radius:999px;white-space:nowrap;
+  background:var(--soft);color:var(--brand);border:1px solid #cfe8e3;
+}
+.tag.gray{background:#f1f4f7;color:var(--muted);border-color:var(--line)}
+.ghost{
+  font-size:12px;padding:5px 11px;border-radius:8px;cursor:pointer;
+  border:1px solid var(--line);background:#fff;color:var(--muted);transition:.15s;
+}
+.ghost:hover{border-color:#c6d2dd;color:var(--ink)}
+.ghost.danger:hover{border-color:#f3c6c6;color:var(--bad);background:var(--bad-bg)}
+.menu-btn{display:none;font-size:17px;background:none;border:0;color:var(--muted);
+          cursor:pointer;padding:2px 6px}
+
+/* ── 消息流 ── */
+/* 注意这里**不能**加 scroll-behavior:smooth。
+   流式输出时每来一个字就设一次 scrollTop，smooth 会让它一直追不上，
+   表现就是"越答越低，光标沉到屏幕外"。
+   另外初始加载时也是直接跳到底，不该有滚动动画。 */
+.stream{flex:1;overflow-y:auto;padding:8px 24px 28px;min-height:0}
+.wrap-inner{max-width:860px;margin:0 auto}
+
+.msg{display:flex;gap:10px;margin:18px 0;align-items:flex-start}
+.msg.user{flex-direction:row-reverse}
+.avatar{
+  width:28px;height:28px;border-radius:9px;flex:0 0 auto;display:grid;
+  place-items:center;font-size:11.5px;font-weight:600;
+}
+.bot .avatar{background:var(--soft);color:var(--brand)}
+.user .avatar{background:#e8edf2;color:#54677a}
+.col{display:flex;flex-direction:column;gap:7px;min-width:0;max-width:80%}
+.bubble{
+  padding:10px 14px;border-radius:13px;word-break:break-word;font-size:14px;
+  white-space:pre-wrap;
+}
+.bot .bubble{
+  background:var(--card);border:1px solid var(--line);border-bottom-left-radius:4px;
+  box-shadow:0 1px 2px rgba(16,32,42,.04);color:var(--ink);
+}
+.user .bubble{
+  background:var(--brand);color:#fff;border-bottom-right-radius:4px;
+  box-shadow:0 2px 8px rgba(15,118,110,.22);
+}
+.user .bubble a{text-decoration:underline}
+.bubble:empty{display:none}
+.bubble strong{font-weight:650;color:#0b3f3a}
+.user .bubble strong{color:#fff}
+.bubble code{
+  font-family:ui-monospace,Consolas,monospace;font-size:12.5px;
+  background:#eef5f4;color:#0f5c55;padding:1px 5px;border-radius:4px;
+}
+.bubble .hr{display:block;height:1px;background:var(--line);margin:9px 0}
+.bubble.streaming::after{
+  content:"";display:inline-block;width:7px;height:15px;margin-left:2px;
+  background:var(--brand);border-radius:1px;vertical-align:-2px;
+  animation:blink 1s steps(2,start) infinite;
+}
+@keyframes blink{50%{opacity:0}}
+
+/* 工具卡片 */
+.tool{
+  padding:8px 12px;border-radius:0 9px 9px 0;border-left:3px solid var(--brand);
+  background:var(--soft2);font-size:12.5px;color:#54677a;
+  animation:fade .25s ease-out;
+}
+.tool .row1{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.tool .nm{color:var(--brand-dk);font-weight:700;font-size:12px;
+          font-family:ui-monospace,Consolas,monospace}
+.tool .ar{
+  font-family:ui-monospace,Consolas,monospace;font-size:11.5px;color:#5d6f7e;
+  background:#e9f3f1;padding:1px 6px;border-radius:5px;max-width:100%;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+.tool .br{margin-top:3px;color:var(--ink2)}
+@keyframes fade{from{opacity:0;transform:translateY(-3px)}to{opacity:1;transform:none}}
+
+.status{
+  font-size:12.5px;color:var(--muted);display:flex;align-items:center;gap:8px;
+}
+.spin{
+  width:12px;height:12px;border:2px solid #cfe0dd;border-top-color:var(--brand);
+  border-radius:50%;animation:sp .7s linear infinite;flex:0 0 auto;
+}
+@keyframes sp{to{transform:rotate(360deg)}}
+
+.stat{font-size:11.5px;color:var(--faint)}
+.stat .flag{color:var(--warn);font-weight:600}
+.err{border-color:#f3c6c6 !important;background:var(--bad-bg) !important;color:var(--bad) !important}
+
+/* ── 输入区 ── */
+.chips{display:flex;gap:8px;padding:0 24px 10px;flex-wrap:wrap;
+       max-width:908px;margin:0 auto;width:100%}
+.chip{
+  font-size:12.5px;padding:6px 12px;border-radius:999px;cursor:pointer;
+  border:1px solid var(--line);background:#fff;color:#465a6b;transition:.15s;
+}
+.chip:hover{border-color:var(--brand);color:var(--brand);background:var(--soft)}
+.composer{
+  padding:12px 24px 16px;background:var(--card);border-top:1px solid var(--line);
+  flex:0 0 auto;
+}
+.composer .row{display:flex;gap:10px;align-items:flex-end;max-width:860px;margin:0 auto}
+textarea{
+  flex:1;resize:none;border:1px solid var(--line);border-radius:12px;
+  padding:11px 14px;font:inherit;max-height:140px;outline:none;transition:.15s;
+  background:#fbfcfd;color:var(--ink);
+}
+textarea:focus{border-color:var(--brand);background:#fff;box-shadow:0 0 0 3px rgba(15,118,110,.09)}
+#send{
+  padding:11px 20px;border:0;border-radius:12px;cursor:pointer;
+  background:var(--brand);color:#fff;font-weight:600;transition:.15s;
+}
+#send:hover{background:#0d6159}
+#send:disabled{background:#b6c6c4;cursor:not-allowed}
+.hint{
+  padding:7px 24px 0;font-size:11.5px;color:#a3b0bc;
+  max-width:908px;margin:0 auto;width:100%;
+}
+
+/* 空会话时的引导 */
+.intro{max-width:860px;margin:26px auto 0;padding:0 24px}
+.intro h2{font-size:16px;margin:0 0 6px;font-weight:650}
+.intro p{margin:0 0 18px;color:var(--muted);font-size:13.5px;line-height:1.8}
+.intro .grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.intro .card{
+  border:1px solid var(--line);border-radius:11px;padding:12px 14px;background:#fff;
+  cursor:pointer;transition:.15s;
+}
+.intro .card:hover{border-color:var(--brand2);box-shadow:0 2px 10px rgba(15,118,110,.07)}
+.intro .card b{display:block;font-size:13px;font-weight:650;margin-bottom:3px;color:var(--brand-dk)}
+.intro .card span{font-size:12.3px;color:var(--muted);line-height:1.6}
+
+/* ── 记录页 ── */
+.page{flex:1;overflow-y:auto;padding:22px 26px 40px;min-height:0}
+.page-inner{max-width:1000px;margin:0 auto}
+
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(148px,1fr));gap:12px;margin-bottom:20px}
+.kpi{background:#fff;border:1px solid var(--line);border-radius:12px;padding:14px 16px}
+.kpi .k{font-size:11.5px;color:var(--faint);letter-spacing:.3px}
+.kpi .v{font-size:22px;font-weight:680;margin-top:3px;line-height:1.3;color:var(--ink)}
+.kpi .v small{font-size:12px;font-weight:500;color:var(--faint);margin-left:3px}
+.kpi.hl .v{color:var(--brand)}
+
+.panel{background:#fff;border:1px solid var(--line);border-radius:12px;padding:16px 18px;margin-bottom:18px}
+.panel h3{margin:0 0 12px;font-size:13px;font-weight:650;color:var(--ink2);
+          display:flex;align-items:center;gap:8px}
+.panel h3 .sub{font-weight:400;color:var(--faint);font-size:11.5px}
+
+.bars{display:flex;flex-direction:column;gap:9px}
+.bar{display:grid;grid-template-columns:150px 1fr 44px;gap:10px;align-items:center;
+     font-size:12.5px}
+.bar .lab{font-family:ui-monospace,Consolas,monospace;font-size:12px;color:var(--brand-dk);
+          overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bar .track{height:9px;background:#eef2f5;border-radius:99px;overflow:hidden}
+/* ★ display:block 不能省。span 默认是 inline，对 inline 元素设 width/height 一律无效，
+   于是"进度条填充"会永远看不见 —— 页面上只剩一条灰色空槽，数字却是对的，
+   特别容易误判成"数据没取到"。 */
+.bar .fill{display:block;height:100%;border-radius:99px;
+           background:linear-gradient(90deg,#14b8a6,#0f766e);transition:width .4s ease}
+.bar .num{text-align:right;color:var(--muted);font-variant-numeric:tabular-nums}
+
+.trend{display:flex;align-items:flex-end;gap:10px;height:112px}
+.trend .day{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;height:100%}
+/* ★ 柱子必须包一层：百分比高度要有一个确定高度的父级。
+   直接把 .col 放进 .day（里面还有数字和日期）算出来的是"整个 112px 的百分比"，
+   再加两个字就把高度挤爆了，柱子会溢出或被压扁。 */
+.trend .barwrap{flex:1;display:flex;align-items:flex-end;justify-content:center;
+                width:100%;min-height:0;padding-top:15px}
+/* 数字钉在柱子顶上：柱高 3px 时它也不会飘到天上去 */
+.trend .col{position:relative;width:100%;max-width:38px;background:#e9eff3;
+            border-radius:5px 5px 0 0;min-height:3px;transition:.3s}
+.trend .col.has{background:linear-gradient(180deg,#5eead4,#0f766e)}
+.trend .n{position:absolute;left:-6px;right:-6px;top:-16px;text-align:center;
+          font-size:11px;color:var(--muted);font-variant-numeric:tabular-nums;line-height:1.2}
+.trend .d{font-size:10.5px;color:#a3b0bc;line-height:1.2}
+
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{
+  text-align:left;font-size:11.5px;font-weight:600;color:var(--faint);
+  padding:8px 10px;border-bottom:1px solid var(--line);white-space:nowrap;
+}
+td{padding:10px;border-bottom:1px solid var(--line2);vertical-align:middle}
+tr:last-child td{border-bottom:0}
+tbody tr:hover{background:#fafcfd}
+td.t{max-width:340px}
+td.t .tt{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+         font-weight:550;color:var(--ink)}
+td.t .tt.empty{color:#b3bfc9;font-weight:400}
+td.num{font-variant-numeric:tabular-nums;color:var(--muted);white-space:nowrap}
+.acts{display:flex;gap:6px;justify-content:flex-end;white-space:nowrap}
+.acts a,.acts button{
+  font-size:11.5px;padding:3px 9px;border-radius:7px;border:1px solid var(--line);
+  background:#fff;color:var(--muted);cursor:pointer;transition:.13s;
+}
+.acts a:hover,.acts button:hover{border-color:var(--brand);color:var(--brand)}
+.acts .del:hover{border-color:#f3c6c6;color:var(--bad);background:var(--bad-bg)}
+.pill{
+  display:inline-block;font-size:11px;padding:1px 7px;border-radius:99px;
+  background:#f1f4f7;color:var(--muted);
+}
+.pill.g{background:var(--soft);color:var(--brand)}
+
+.empty-state{padding:46px 20px;text-align:center;color:#a3b0bc;font-size:13px}
+
+/* 404 */
+.notfound{flex:1;display:grid;place-items:center;text-align:center;padding:40px}
+.notfound .big{font-size:44px;font-weight:700;color:#bcc8d3;letter-spacing:2px}
+.notfound p{color:var(--muted);margin:6px 0 18px;font-size:13.5px}
+.notfound a{font-size:13px;color:var(--brand);border-bottom:1px solid #a7d8d2;padding-bottom:1px}
+
+/* ── 窄屏：侧栏收成抽屉 ── */
+.scrim{display:none;position:fixed;inset:0;background:rgba(16,32,42,.32);z-index:40;
+       opacity:0;transition:.2s}
+@media (max-width:900px){
+  .app{grid-template-columns:1fr}
+  .side{
+    position:fixed;left:0;top:0;bottom:0;width:280px;z-index:50;
+    transform:translateX(-102%);transition:transform .22s ease;
+    box-shadow:0 0 32px rgba(16,32,42,.16);
+  }
+  body.nav-open .side{transform:none}
+  body.nav-open .scrim{display:block;opacity:1}
+  .menu-btn{display:block}
+  .topbar{padding:11px 16px;gap:8px}
+  /* ★ 这一条是关键：不写的话，.sp 里五个标签的"最小内容宽度"约 500px，
+     它会直接把 .main 撑到 500 —— 而 .app 有 overflow:hidden，
+     于是整页右侧被无声地裁掉（连输入框都少一截）。
+     flex-basis:100% 让它自己占一行，内部再 wrap。 */
+  .topbar .sp{margin-left:0;flex:1 1 100%;justify-content:flex-start;min-width:0}
+  .topbar .ht{max-width:calc(100vw - 130px)}
+  .topbar .hs{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .stream{padding:6px 16px 22px}
+  .composer{padding:10px 16px 14px}
+  .chips,.hint{padding-left:16px;padding-right:16px}
+  .col{max-width:84%}
+  .intro .grid{grid-template-columns:1fr}
+  .page{padding:16px}
+  .bar{grid-template-columns:104px 1fr 36px}
+}

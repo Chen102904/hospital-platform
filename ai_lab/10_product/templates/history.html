@@ -1,0 +1,184 @@
+{% extends "base.html" %}
+{% block title %}记录与统计 · HIS 智能助手{% endblock %}
+
+{% block body %}
+<div class="topbar">
+  <button class="menu-btn" id="menuBtn" aria-label="打开侧栏">☰</button>
+  <div>
+    <div class="ht">全部记录与统计</div>
+    <div class="hs">每次问答都留了底 —— 耗时、轮次、调了哪些工具</div>
+  </div>
+  <div class="sp">
+    <a class="ghost" href="/new">＋ 新对话</a>
+  </div>
+</div>
+
+<div class="page">
+  <div class="page-inner">
+
+    <div class="kpis">
+      <div class="kpi"><div class="k">会话</div><div class="v">{{ st.sessions }}</div></div>
+      <div class="kpi"><div class="k">问答</div><div class="v">{{ st.answers }}<small>次</small></div></div>
+      <div class="kpi"><div class="k">工具调用</div><div class="v">{{ st.tool_total }}<small>次</small></div></div>
+      <div class="kpi hl"><div class="k">平均响应</div><div class="v">{{ st.avg_elapsed }}<small>秒</small></div></div>
+      <div class="kpi"><div class="k">平均轮次</div><div class="v">{{ st.avg_rounds }}</div></div>
+      <div class="kpi"><div class="k">正常收尾</div><div class="v">{{ st.ok_rate }}<small>%</small></div></div>
+    </div>
+
+    <div class="panel">
+      <h3>工具使用排行 <span class="sub">模型自己决定调哪个 —— 这张图就是你"白名单"的实际分布</span></h3>
+      {% if st.tool_rank %}
+      <div class="bars">
+        {% set top = st.tool_rank[0][1] %}
+        {% for name, n in st.tool_rank %}
+        <div class="bar">
+          <span class="lab">{{ name }}</span>
+          <span class="track"><span class="fill" style="width: {{ (n / top * 100)|round|int }}%"></span></span>
+          <span class="num">{{ n }}</span>
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <div class="empty-state">还没有工具调用记录，去问一句「近 30 天哪个科室收入最高」试试</div>
+      {% endif %}
+    </div>
+
+    <div class="panel">
+      <h3>最近 7 天提问量 <span class="sub">共 {{ st.messages }} 条消息</span></h3>
+      <div class="trend">
+        {% for d in daily %}
+        <div class="day">
+          <div class="barwrap">
+            <div class="col {% if d.n %}has{% endif %}"
+                 style="height: {{ [(d.n / peak * 100)|round|int, 3]|max }}%">
+              <span class="n">{{ d.n }}</span>
+            </div>
+          </div>
+          <span class="d">{{ d.date }}</span>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>会话列表 <span class="sub">{{ rows|length }} 条（含空会话）</span></h3>
+      {% if rows %}
+      <table>
+        <thead>
+          <tr>
+            <th>标题</th>
+            <th style="width:64px">句数</th>
+            <th style="width:74px">工具调用</th>
+            <th style="width:88px">累计耗时</th>
+            <th style="width:112px">最后活动</th>
+            <th style="width:150px"></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for r in rows %}
+          <tr data-sid="{{ r.id }}">
+            <td class="t">
+              <span class="tt {% if r.msg_count == 0 %}empty{% endif %}">{{ r.title }}</span>
+            </td>
+            <td class="num">{{ r.msg_count }}</td>
+            <td class="num">
+              {% if r.tool_count %}<span class="pill g">{{ r.tool_count }}</span>
+              {% else %}<span class="pill">0</span>{% endif %}
+            </td>
+            <td class="num">{{ r.total_elapsed|round(1) }} s</td>
+            <td class="num">{{ r.updated_at[5:16] }}</td>
+            <td>
+              <div class="acts">
+                <a href="/c/{{ r.id }}">打开</a>
+                <button class="ren">改名</button>
+                <a href="/api/session/{{ r.id }}/export">导出</a>
+                <button class="del">删除</button>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% else %}
+      <div class="empty-state">一条记录都没有。回对话页问一句，这里就会长出来。</div>
+      {% endif %}
+    </div>
+
+  </div>
+</div>
+{% endblock %}
+
+{% block script %}
+<script>
+/* 记录页的交互只有三件事：改名、删除、点标题打开。
+   都不刷新页面 —— 改完立刻生效，比整页重载舒服。 */
+(function(){
+  const canRename = (el) => el && el.classList && el.classList.contains('tt');
+
+  document.querySelectorAll('tr[data-sid]').forEach(tr => {
+    const sid = tr.dataset.sid;
+    const tt  = tr.querySelector('.tt');
+
+    /* 点标题直接进对话 */
+    tt.addEventListener('click', () => { location.href = '/c/' + sid; });
+    tt.style.cursor = 'pointer';
+
+    /* 改名：把 span 换成 input，回车提交、Esc 取消 */
+    tr.querySelector('.ren').addEventListener('click', () => {
+      if (tr.querySelector('input.ren-input')) return;
+      const input = document.createElement('input');
+      input.className = 'ren-input';
+      input.value = tt.textContent;
+      input.style.cssText = 'width:100%;font:inherit;padding:3px 7px;border:1px solid #0f766e;' +
+                            'border-radius:6px;outline:none';
+      tt.replaceWith(input);
+      input.focus(); input.select();
+
+      const done = async (save) => {
+        if (save) {
+          const v = input.value.trim();
+          if (v) {
+            const res = await fetch('/api/session/' + sid, {
+              method: 'PATCH',
+              headers: {'Content-Type': 'application/json'},
+              body: JSON.stringify({title: v})
+            });
+            if (!res.ok) { alert('改名失败'); }
+          }
+        }
+        /* 不论存不存，都把 input 换回 span */
+        const span = document.createElement('span');
+        span.className = 'tt';
+        span.textContent = input.value.trim() || tt.textContent;
+        span.style.cursor = 'pointer';
+        span.addEventListener('click', () => { location.href = '/c/' + sid; });
+        input.replaceWith(span);
+        if (save && span.textContent) {
+          const a = tr.querySelector('.sitem');   /* 侧栏不会实时变，提示一下 */
+        }
+      };
+
+      input.addEventListener('keydown', e => {
+        if (e.key === 'Enter') { e.preventDefault(); done(true); }
+        if (e.key === 'Escape') { e.preventDefault(); done(false); }
+      });
+      input.addEventListener('blur', () => done(true));
+    });
+
+    /* 删除 —— 二次确认，因为回不来 */
+    tr.querySelector('.del').addEventListener('click', async () => {
+      const title = tt.textContent || '这条对话';
+      if (!confirm('删除「' + title + '」？消息会一起删掉，不能恢复。')) return;
+      const res = await fetch('/api/session/' + sid, {method: 'DELETE'});
+      if (res.ok) {
+        tr.remove();
+        /* 删完剩 0 行就刷新一下，让空状态出来 */
+        if (!document.querySelector('tr[data-sid]')) location.reload();
+      } else {
+        alert('删除失败');
+      }
+    });
+  });
+})();
+</script>
+{% endblock %}

@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% block title %}操作日志 | 医院信息管理系统{% endblock %}
+
+{% block content %}
+<h1 class="page-title">操作日志<span class="page-sub">谁在什么时候、对哪条数据做了什么</span></h1>
+
+<div class="filters">
+  <span class="filter-label">动作</span>
+  <a class="btn-plain {% if not current_action %}active{% endif %}"
+     href="{{ url_for('logs', kw=kw) }}">全部</a>
+  {% for a, n in action_counts.items() %}
+    <a class="btn-plain {% if current_action == a %}active{% endif %}"
+       href="{{ url_for('logs', action=a, kw=kw) }}">{{ a }} {{ n }}</a>
+  {% endfor %}
+</div>
+
+<div class="toolbar">
+  <form class="search-form" method="get" action="{{ url_for('logs') }}">
+    {% if current_action %}<input type="hidden" name="action" value="{{ current_action }}">{% endif %}
+    <input type="text" name="kw" value="{{ kw }}" placeholder="搜索操作人 / 对象 / 说明">
+    <button class="btn" type="submit">搜索</button>
+    {% if kw or current_action %}
+      <a class="btn-plain" href="{{ url_for('logs') }}">重置筛选</a>
+    {% endif %}
+  </form>
+  <div class="auto-refresh"></div>
+  <div class="count-info">共 <b>{{ total }}</b> 条日志，第 {{ page }} / {{ total_pages }} 页</div>
+</div>
+
+<div class="card">
+  {% if rows %}
+  <table>
+    <thead>
+      <tr>
+        <th style="width:60px">编号</th><th style="width:150px">时间</th>
+        <th style="width:130px">操作人</th><th style="width:90px">动作</th>
+        <th style="width:170px">操作对象</th><th>说明</th><th style="width:110px">来源 IP</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for r in rows %}
+      <tr>
+        <td class="mono">{{ r.log_id }}</td>
+        <td>{{ r.create_time.strftime('%Y-%m-%d %H:%M:%S') if r.create_time else '' }}</td>
+        <td>{{ r.staff_name or '—' }}<span class="sub">{{ r.role or '' }}</span></td>
+        <td>
+          <span class="tag {% if r.action == '退费' %}tag-danger{% elif r.action in ('登录', '登出') %}tag-已就诊{% else %}tag-ok{% endif %}">{{ r.action }}</span>
+        </td>
+        <td class="mono">{{ r.target or '—' }}</td>
+        <td class="wrap-cell">{{ r.detail or '—' }}</td>
+        <td class="mono">{{ r.ip or '—' }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+    <div class="empty">没有符合条件的日志</div>
+  {% endif %}
+</div>
+
+{% if total_pages > 1 %}
+<div class="pager">
+  {% if prev_url %}<a class="btn-plain" href="{{ prev_url }}">上一页</a>{% endif %}
+  {% for p, url in pager %}
+    <a class="btn-plain {% if p == page %}active{% endif %}" href="{{ url }}">{{ p }}</a>
+  {% endfor %}
+  {% if next_url %}<a class="btn-plain" href="{{ next_url }}">下一页</a>{% endif %}
+</div>
+{% endif %}
+
+{% endblock %}

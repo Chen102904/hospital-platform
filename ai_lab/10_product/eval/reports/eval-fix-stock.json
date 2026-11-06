@@ -1,0 +1,192 @@
+{
+  "summary": {
+    "n": 5,
+    "passed": 5,
+    "acc": 100.0,
+    "tokens": 14891,
+    "elapsed": 43.1,
+    "abnormal": 0,
+    "abnormal_ids": [],
+    "refuse_n": 0,
+    "refuse_ok": 0,
+    "refuse_rate": null,
+    "false_refusal": 0,
+    "nodata_n": 0,
+    "nodata_ok": 0,
+    "tool_n": 5,
+    "tool_ok": 5,
+    "tool_rate": 100.0,
+    "cite_n": 0,
+    "cite_ok": 0,
+    "cite_rate": null,
+    "by_cat": {
+      "查库·库存": {
+        "n": 3,
+        "ok": 3
+      },
+      "多工具": {
+        "n": 2,
+        "ok": 2
+      }
+    }
+  },
+  "results": [
+    {
+      "id": "B03",
+      "cat": "查库·库存",
+      "q": "哪个药库存最少？还剩多少？",
+      "pass": true,
+      "why": "全部断言命中",
+      "flags": {},
+      "answer": "库存最少的是**地塞米松磷酸钠注射液**，属于注射与输液用药，目前还剩 **45 支**，状态是在用。",
+      "status": "ok",
+      "tools": [
+        "medicine_stock"
+      ],
+      "want_tools": [
+        "medicine_stock"
+      ],
+      "tool_hit": true,
+      "missing_tools": [],
+      "elapsed": 6.7,
+      "tokens": 2607,
+      "rounds": 2,
+      "expect_refuse": false,
+      "expect_no_data": false,
+      "cited": null,
+      "why_case": "排序语义，不是阈值语义。必须用 medicine_stock(order=asc) 取第一条；用 low_stock_medicines 猜阈值永远猜不准。"
+    },
+    {
+      "id": "B04",
+      "cat": "查库·库存",
+      "q": "布洛芬缓释胶囊还有多少库存？",
+      "pass": true,
+      "why": "全部断言命中",
+      "flags": {},
+      "answer": "布洛芬缓释胶囊目前还有 **480 盒** 库存，状态正常在用。",
+      "status": "ok",
+      "tools": [
+        "medicine_stock"
+      ],
+      "want_tools": [
+        "medicine_stock"
+      ],
+      "tool_hit": true,
+      "missing_tools": [],
+      "elapsed": 5.1,
+      "tokens": 2485,
+      "rounds": 2,
+      "expect_refuse": false,
+      "expect_no_data": false,
+      "cited": null,
+      "why_case": "点查语义：按药品名查，任何库存量都查得到。上一版这题必须把阈值提到 500 以上才碰得到，工具表达力不够。"
+    },
+    {
+      "id": "B05",
+      "cat": "查库·库存",
+      "q": "库存最多的是哪个药？有多少？",
+      "pass": true,
+      "why": "全部断言命中",
+      "flags": {},
+      "answer": "库存最多的是**葡萄糖注射液**，目前有 **720 瓶**。它属于注射与输液用药，状态正常在用。",
+      "status": "ok",
+      "tools": [
+        "medicine_stock"
+      ],
+      "want_tools": [
+        "medicine_stock"
+      ],
+      "tool_hit": true,
+      "missing_tools": [],
+      "elapsed": 7.2,
+      "tokens": 2532,
+      "rounds": 2,
+      "expect_refuse": false,
+      "expect_no_data": false,
+      "cited": null,
+      "why_case": "和 B03 反向，专门测 order=desc 这条分支有没有被模型正确传参。只写 asc 的工具在这题上会给出『最少』的答案。"
+    },
+    {
+      "id": "E02",
+      "cat": "多工具",
+      "q": "现在库存最少的是哪个药？系统为什么不允许直接改库存数字？",
+      "pass": true,
+      "why": "全部断言命中",
+      "flags": {},
+      "answer": "**库存最少的药**：地塞米松磷酸钠注射液，只剩 45 支，属于注射与输液用药，状态是在用。\n\n**为什么不能直接改库存数字**：这个系统的库存是\"事件溯源\"设计的——`medicine_stock_log` 是账本，药品的 `stock` 字段只是流水加减出来的期末余额，不是一个可以随便赋值的数字。\n\n具体来说，库存只能由四种带流水的动作改变：入库、出库、接诊开方扣减、退费退药回补。每一次变动都会在流水表里留一条\"变动前/变动后\"的记录。如果直接改 `stock`，账本就断了，以后就没法回答\"这批库存什么时候进的\"\"上个月为什么少了 200 盒\"\"处方扣的和人工出库的分别有多少\"这类问题。\n\n所以编辑药品时如果试图直接改库存，系统会拒绝并提示\"请走入库/出库\"。哪怕新增药品时填了期初库存，也必须在同一个事务里补一条 `change_type='入库'`、`before_stock=0` 的流水，否则那个期初库存就成了没有来源的凭空数字。\n\n（出处：`hospital_web/README.md` > 基础数据维护；`hospital_db_project/数据库设计文档.md` > 3.5 为什么要单独记一张库存流水表、2.6 medicine 药品表）",
+      "status": "ok",
+      "tools": [
+        "medicine_stock",
+        "search_docs"
+      ],
+      "want_tools": [
+        "medicine_stock",
+        "search_docs"
+      ],
+      "tool_hit": true,
+      "missing_tools": [],
+      "elapsed": 16.3,
+      "tokens": 4227,
+      "rounds": 2,
+      "expect_refuse": false,
+      "expect_no_data": false,
+      "cited": null,
+      "why_case": "一个查库一个查文档，两个都得真的调到（判分按全集算，不是命中任一就算通过）。"
+    },
+    {
+      "id": "E03",
+      "cat": "多工具",
+      "q": "库存最少的药和收入最高的科室，分别是什么？",
+      "pass": true,
+      "why": "全部断言命中",
+      "flags": {},
+      "answer": "查到了，结果如下：\n\n- **库存最少的药**：地塞米松磷酸钠注射液，只剩 45 支，属于注射与输液用药，目前还在用。\n- **收入最高的科室**：内科，近 30 天开了 9 笔收费单，收入 1159.40 元，排在第一。第二名是儿科（1134.00 元），咬得挺紧。",
+      "status": "ok",
+      "tools": [
+        "medicine_stock",
+        "dept_revenue_rank"
+      ],
+      "want_tools": [
+        "medicine_stock",
+        "dept_revenue_rank"
+      ],
+      "tool_hit": true,
+      "missing_tools": [],
+      "elapsed": 7.8,
+      "tokens": 3040,
+      "rounds": 2,
+      "expect_refuse": false,
+      "expect_no_data": false,
+      "cited": null,
+      "why_case": "两个查库工具的组合，且没有文档工具兜底，模型必须准确路由。判分要求两个都要调。"
+    }
+  ],
+  "truth": {
+    "TOP1_AMT": 1159.4,
+    "TOP2_AMT": 1134.0,
+    "TOP3_AMT": 910.9,
+    "TOP4_AMT": 863.7,
+    "TOP5_AMT": 633.8,
+    "LAST_AMT": 47.8,
+    "LAST_DEPT": "耳鼻喉科",
+    "N_DEPT_30": 11,
+    "INNER_CNT": 9,
+    "STOCK_MIN_NAME": "地塞米松磷酸钠注射液",
+    "STOCK_MIN_QTY": 45,
+    "STOCK_MAX_NAME": "葡萄糖注射液",
+    "STOCK_MAX_QTY": 720,
+    "LOW50_QTY": 45,
+    "IBU_QTY": 480,
+    "N_TABLE": 15,
+    "N_DEPT_60": 12,
+    "_DAYS": 30
+  },
+  "meta": {
+    "when": "2026-10-23 16:13:37",
+    "model": "qwen3.7-plus",
+    "version": 1,
+    "tag": "fix-medicine-stock",
+    "chunks": 63,
+    "wall": 43.20056772232056
+  }
+}

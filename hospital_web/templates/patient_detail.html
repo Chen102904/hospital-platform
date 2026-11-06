@@ -1,0 +1,178 @@
+{% extends "base.html" %}
+{% block title %}{{ info.patient_name }} 的患者档案 | 医院信息管理系统{% endblock %}
+
+{% block content %}
+<h1 class="page-title">
+  <a class="link" href="{{ url_for('patients') }}">患者管理</a>
+  <span class="sub">/ {{ info.patient_name }} 的档案</span>
+</h1>
+
+<div class="card">
+  <div class="info-grid">
+    <div class="info-item"><span class="k">患者编号</span><span class="v">{{ info.patient_id }}</span></div>
+    <div class="info-item"><span class="k">姓名</span><span class="v">{{ info.patient_name }}</span></div>
+    <div class="info-item"><span class="k">性别</span><span class="v">{{ info.gender }}</span></div>
+    <div class="info-item"><span class="k">年龄</span><span class="v">{% if info.age is not none %}{{ info.age }} 岁{% else %}—{% endif %}</span></div>
+    <div class="info-item"><span class="k">出生日期</span><span class="v">{{ info.birth_date or '—' }}</span></div>
+    <div class="info-item"><span class="k">联系电话</span><span class="v mono">{{ info.phone_mask or '—' }}</span></div>
+    <div class="info-item"><span class="k">身份证号</span><span class="v mono">{{ info.id_card_mask or '—' }}</span></div>
+    <div class="info-item"><span class="k">建档时间</span><span class="v">{{ info.create_time.strftime('%Y-%m-%d') if info.create_time else '—' }}</span></div>
+    <div class="info-item wide"><span class="k">家庭住址</span><span class="v">{{ info.address or '—' }}</span></div>
+  </div>
+  <p class="hint">注：手机号与身份证号已脱敏展示，仅保留首尾用于核对。</p>
+  {% if can('patient.edit') %}
+  <div class="form-actions">
+    <a class="btn" href="{{ url_for('patient_edit', pid=info.patient_id) }}">修改档案</a>
+  </div>
+  {% endif %}
+</div>
+
+<div class="card">
+  <h2>
+    住院记录（{{ admissions|length }} 次）
+    {% if in_ward %}<span class="tag tag-在院">在院中 · {{ in_ward.bed_no or '床位待定' }}</span>{% endif %}
+  </h2>
+  {% if admissions %}
+  <table>
+    <thead>
+      <tr><th>住院号</th><th>住院科室</th><th>主治医生</th><th>床位</th>
+          <th>入院时间</th><th>出院时间</th><th>住院天数</th><th>入院诊断</th><th>状态</th></tr>
+    </thead>
+    <tbody>
+      {% for a in admissions %}
+      <tr>
+        <td class="mono">{{ a.admission_no }}</td>
+        <td>{{ a.dept_name }}</td>
+        <td>{{ a.doctor_name }}</td>
+        <td>{% if a.bed_no %}<span class="mono">{{ a.bed_no }}</span>{% else %}—{% endif %}</td>
+        <td>{{ a.admit_time.strftime('%Y-%m-%d %H:%M') if a.admit_time else '' }}</td>
+        <td>{{ a.discharge_time.strftime('%Y-%m-%d %H:%M') if a.discharge_time else '—' }}</td>
+        <td>{{ a.days }} 天</td>
+        <td>{{ a.admit_diagnosis or '—' }}</td>
+        <td><span class="tag tag-{{ a.status }}">{{ a.status }}</span></td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+    <div class="empty">该患者没有住院记录</div>
+  {% endif %}
+
+  {% if in_ward %}
+  <div class="form-actions">
+    <a class="btn-plain" href="{{ url_for('admissions', kw=in_ward.admission_no) }}">到住院管理看这一条</a>
+    <span class="hint">患者当前在院，出院请到住院管理里办理</span>
+  </div>
+  {% elif can('admission.add') %}
+  <div class="form-actions">
+    <a class="btn" href="{{ url_for('admission_new', patient_id=info.patient_id) }}">办理入院</a>
+  </div>
+  {% endif %}
+</div>
+
+<div class="card">
+  <h2>挂号记录（{{ regs|length }} 条）</h2>
+  {% if regs %}
+  <table>
+    <thead>
+      <tr><th>编号</th><th>挂号时间</th><th>科室</th><th>医生</th><th>类型</th><th>挂号费</th><th>状态</th><th>操作</th></tr>
+    </thead>
+    <tbody>
+      {% for r in regs %}
+      <tr>
+        <td>{{ r.reg_id }}</td>
+        <td>{{ r.reg_date.strftime('%Y-%m-%d %H:%M') if r.reg_date else '' }}</td>
+        <td>{{ r.dept_name }}</td>
+        <td>{{ r.doctor_name }}<span class="sub">{{ r.title or '' }}</span></td>
+        <td>
+          <span class="tag tag-type-{{ r.visit_type }}">{{ r.visit_type }}</span>
+          {% if r.parent_reg_id %}<span class="sub">#{{ r.parent_reg_id }}</span>{% endif %}
+        </td>
+        <td>￥{{ '%.2f'|format(r.reg_fee) }}</td>
+        <td><span class="tag tag-{{ r.reg_status }}">{{ r.reg_status }}</span></td>
+        <td class="ops">
+          {% if r.reg_status == '已挂号' %}
+            <a class="btn-mini btn-mini-ok" href="{{ url_for('visit', reg_id=r.reg_id) }}">接诊开方</a>
+            <form class="inline-form" method="post"
+                  action="{{ url_for('change_reg_status', rid=r.reg_id) }}"
+                  onsubmit="return confirm('确定取消这条挂号吗？取消后不能恢复。');">
+              <input type="hidden" name="status" value="已取消">
+              <input type="hidden" name="back" value="{{ request.full_path.rstrip('?') }}">
+              <button class="btn-mini btn-mini-danger" type="submit">取消挂号</button>
+            </form>
+          {% elif r.reg_status in ('已就诊', '已收费', '已发药') %}
+            {% if can('charge.view') %}
+            <a class="btn-mini" href="{{ url_for('charge_page', reg_id=r.reg_id) }}">费用</a>
+            {% endif %}
+            <a class="btn-mini"
+               href="{{ url_for('add', patient_id=info.patient_id, dept_id=r.dept_id,
+                                doctor_id=r.doctor_id, visit_type='复诊',
+                                parent_reg_id=r.reg_id) }}">复诊挂号</a>
+          {% else %}
+            <a class="btn-mini"
+               href="{{ url_for('add', patient_id=info.patient_id, dept_id=r.dept_id,
+                                doctor_id=r.doctor_id, visit_type='初诊') }}">重新挂号</a>
+          {% endif %}
+          <a class="btn-mini btn-mini-plain" href="{{ url_for('print_registration', rid=r.reg_id) }}"
+             target="_blank">打印</a>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+    <div class="empty">该患者暂无挂号记录</div>
+  {% endif %}
+</div>
+
+<div class="card">
+  <h2>病历记录（{{ records|length }} 条）</h2>
+  {% if records %}
+  <table>
+    <thead>
+      <tr><th>病历号</th><th>就诊时间</th><th>接诊医生</th><th>诊断结果</th>
+          <th>医嘱</th><th>处方明细</th></tr>
+    </thead>
+    <tbody>
+      {% for m in records %}
+      <tr>
+        <td>{{ m.record_id }}</td>
+        <td>{{ m.visit_date.strftime('%Y-%m-%d %H:%M') if m.visit_date else '' }}</td>
+        <td>{{ m.doctor_name }}</td>
+        <td class="wrap-cell">{{ m.diagnosis or '—' }}</td>
+        <td class="wrap-cell sub">{{ m.remark or '—' }}</td>
+        <td>
+          {% if m.details %}
+          <details class="rx-details">
+            <summary>{{ m.details|length }} 种药品 · 合计 ￥{{ '%.2f'|format(m.total) }}</summary>
+            <table class="rx-detail">
+              <thead>
+                <tr><th>药品</th><th>规格</th><th>数量</th><th>用法用量</th><th>单价</th><th>小计</th></tr>
+              </thead>
+              <tbody>
+                {% for d in m.details %}
+                <tr>
+                  <td>{{ d.medicine_name }}</td>
+                  <td class="sub">{{ d.spec or '' }}</td>
+                  <td>{{ d.quantity }} {{ d.unit or '' }}</td>
+                  <td class="sub">{{ d.dosage or '—' }}</td>
+                  <td>￥{{ '%.2f'|format(d.price) }}</td>
+                  <td>￥{{ '%.2f'|format(d.price * d.quantity) }}</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </details>
+          {% else %}
+            <span class="sub">未开药</span>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+    <div class="empty">该患者暂未产生病历</div>
+  {% endif %}
+</div>
+{% endblock %}

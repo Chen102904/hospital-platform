@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>挂号单 #{{ reg.reg_id }} | 医院信息管理系统</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; padding: 28px 16px; background: #F0F3F0;
+      font-family: "Microsoft YaHei", "PingFang SC", -apple-system, sans-serif;
+      color: #21302A;
+    }
+    .sheet {
+      width: 720px; max-width: 100%; margin: 0 auto; background: #fff;
+      border-radius: 6px; padding: 30px 34px 26px;
+      box-shadow: 0 6px 24px rgba(20,50,40,.10);
+    }
+    .head { text-align: center; border-bottom: 2px solid #2D6A4F; padding-bottom: 14px; }
+    .head h1 { margin: 0 0 6px; font-size: 22px; letter-spacing: 4px; color: #1B4332; }
+    .head .en { font-size: 11px; letter-spacing: 2px; color: #7C8C84; text-transform: uppercase; }
+    .head .doc-type { display: inline-block; margin-top: 10px; padding: 3px 16px;
+      background: #2D6A4F; color: #fff; border-radius: 12px; font-size: 13px; letter-spacing: 2px; }
+    .no-row { display: flex; justify-content: space-between; align-items: flex-end;
+      margin: 16px 0 12px; font-size: 13px; color: #4C5A52; }
+    .no-row .big { font-size: 20px; font-weight: 700; color: #1B4332; font-family: Consolas, monospace; }
+    table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+    td { border: 1px solid #DCE5DF; padding: 9px 12px; }
+    td.k { width: 96px; background: #F6F9F7; color: #4C5A52; }
+    .foot { display: flex; justify-content: space-between; margin-top: 18px;
+      font-size: 12px; color: #7C8C84; }
+    .tip { margin-top: 16px; padding: 10px 12px; background: #F6F9F7; border-left: 3px solid #2D6A4F;
+      font-size: 12px; color: #5C6B63; line-height: 1.7; }
+    .actions { width: 720px; max-width: 100%; margin: 18px auto 0; text-align: center; }
+    .actions button, .actions a {
+      display: inline-block; margin: 0 6px; padding: 9px 22px; border-radius: 6px;
+      border: 1px solid #2D6A4F; background: #2D6A4F; color: #fff; font-size: 14px;
+      cursor: pointer; text-decoration: none;
+    }
+    .actions a { background: #fff; color: #2D6A4F; }
+    @media print {
+      body { background: #fff; padding: 0; }
+      .sheet { box-shadow: none; border-radius: 0; width: 100%; padding: 0; }
+      .actions { display: none; }
+      @page { margin: 14mm; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="sheet">
+  <div class="head">
+    <h1>长兴医院</h1>
+    <div class="en">Outpatient Registration Receipt</div>
+    <div class="doc-type">挂 号 单</div>
+  </div>
+
+  <div class="no-row">
+    <div>挂号编号：<span class="big">{{ '%06d'|format(reg.reg_id) }}</span></div>
+    <div>
+      状态：{{ reg.reg_status }} · {{ reg.visit_type }}<br>
+      打印时间：{{ now.strftime('%Y-%m-%d %H:%M') }}
+    </div>
+  </div>
+
+  <table>
+    <tr>
+      <td class="k">患者姓名</td><td>{{ reg.patient_name }}</td>
+      <td class="k">性别</td><td>{{ reg.gender }}</td>
+      <td class="k">年龄</td><td>{% if reg.age is not none %}{{ reg.age }} 岁{% else %}—{% endif %}</td>
+    </tr>
+    <tr>
+      <td class="k">联系电话</td><td colspan="3">{{ reg.phone or '—' }}</td>
+      <td class="k">患者编号</td><td>{{ reg.patient_id }}</td>
+    </tr>
+    <tr>
+      <td class="k">就诊科室</td><td colspan="3">{{ reg.dept_name }}</td>
+      <td class="k">科室位置</td><td>{{ reg.dept_location or '—' }}</td>
+    </tr>
+    <tr>
+      <td class="k">接诊医生</td>
+      <td colspan="3">{{ reg.doctor_name }}{% if reg.title %}（{{ reg.title }}）{% endif %}</td>
+      <td class="k">科室电话</td><td>{{ reg.dept_phone or '—' }}</td>
+    </tr>
+    <tr>
+      <td class="k">挂号时间</td>
+      <td colspan="3">{{ reg.reg_date.strftime('%Y-%m-%d %H:%M') if reg.reg_date else '—' }}</td>
+      <td class="k">挂号费</td><td>￥{{ '%.2f'|format(reg.reg_fee) }}</td>
+    </tr>
+    <tr>
+      <td class="k">擅长领域</td>
+      <td colspan="5">{{ reg.specialty or '—' }}</td>
+    </tr>
+  </table>
+
+  <div class="tip">
+    请携带本挂号单前往 <b>{{ reg.dept_location or reg.dept_name }}</b> 候诊区等候叫号。<br>
+    如需退号，请在就诊前到挂号窗口办理；本单据为系统生成，仅作演示用途。
+  </div>
+
+  <div class="foot">
+    <span>医院信息管理系统 · 演示单据</span>
+    <span>#{{ '%06d'|format(reg.reg_id) }}</span>
+  </div>
+</div>
+
+<div class="actions">
+  <button onclick="window.print()">打印</button>
+  <a href="javascript:window.close()">关闭</a>
+</div>
+
+</body>
+</html>

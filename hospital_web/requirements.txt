@@ -1,0 +1,8 @@
+flask==3.1.3
+pymysql==1.2.3
+openpyxl==3.1.5
+# Flask 自带依赖，这里显式列出：
+# 登录用 check_password_hash 校验密码，seed_demo_data.py 用它生成密码哈希
+werkzeug>=3.0
+# Docker 部署用的生产服务器（本地 python app.py 不用它）
+gunicorn>=21.2

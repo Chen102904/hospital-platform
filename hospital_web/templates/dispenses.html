@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+{% block title %}药房发药 | 医院信息管理系统{% endblock %}
+
+{% block content %}
+<h1 class="page-title">药房发药</h1>
+
+<div class="stats">
+  <div class="stat">
+    <div class="label">待发药</div>
+    <div class="value {% if stat.to_dispense %}value-warn{% endif %}">{{ stat.to_dispense }}</div>
+  </div>
+  <div class="stat"><div class="label">已发药</div><div class="value">{{ stat.dispensed }}</div></div>
+  <div class="stat"><div class="label">已退回（退费退药）</div><div class="value">{{ stat.returned }}</div></div>
+</div>
+
+<div class="filters">
+  <span class="filter-label">状态</span>
+  <a class="btn-plain {% if not current_status %}active{% endif %}"
+     href="{{ url_for('dispenses', kw=kw) }}">全部</a>
+  {% for s in ['待发药', '已发药', '已退回'] %}
+    <a class="btn-plain {% if current_status == s %}active{% endif %}"
+       href="{{ url_for('dispenses', status=s, kw=kw) }}">{{ s }}</a>
+  {% endfor %}
+</div>
+
+<div class="toolbar">
+  <form class="search-form" method="get" action="{{ url_for('dispenses') }}">
+    {% if current_status %}<input type="hidden" name="status" value="{{ current_status }}">{% endif %}
+    <input type="text" name="kw" value="{{ kw }}" placeholder="搜索患者姓名或收费单号">
+    <button class="btn" type="submit">搜索</button>
+    {% if kw or current_status %}
+      <a class="btn-plain" href="{{ url_for('dispenses') }}">重置筛选</a>
+    {% endif %}
+  </form>
+  <div class="auto-refresh"></div>
+  <div class="count-info">共 <b>{{ total }}</b> 条，第 {{ page }} / {{ total_pages }} 页</div>
+</div>
+
+<div class="card">
+  {% if rows %}
+  <table>
+    <thead>
+      <tr>
+        <th>挂号</th><th>患者</th><th>科室 / 医生</th><th>处方</th>
+        <th>收费单</th><th>金额</th><th>状态</th><th>发药药师 / 时间</th>
+        <th class="th-ops">操作</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for r in rows %}
+      <tr>
+        <td>{{ r.reg_id }}<span class="sub">{{ r.reg_date.strftime('%m-%d %H:%M') if r.reg_date else '' }}</span></td>
+        <td>
+          <a class="link" href="{{ url_for('patient_detail', pid=r.patient_id) }}">{{ r.patient_name }}</a>
+          <span class="sub">{{ r.gender }}{% if r.age is not none %} · {{ r.age }}岁{% endif %}</span>
+        </td>
+        <td>{{ r.dept_name }}<span class="sub">{{ r.doctor_name }}</span></td>
+        <td>
+          {% if r.med_cnt %}<span class="tag tag-ok">{{ r.med_cnt }} 种</span>
+          {% else %}<span class="sub">未开药</span>{% endif %}
+        </td>
+        <td class="mono">{{ r.charge_no or '—' }}</td>
+        <td>{% if r.total_fee is not none %}￥{{ '%.2f'|format(r.total_fee) }}{% else %}—{% endif %}</td>
+        <td>
+          {% if r.dispense_status == '已发药' %}<span class="tag tag-ok">已发药</span>
+          {% elif r.dispense_status == '已退回' %}<span class="tag tag-danger">已退回</span>
+          {% elif r.reg_status == '已收费' %}<span class="tag tag-warn">待发药</span>
+          {% elif r.reg_status == '已退费' %}<span class="tag tag-danger">已退费</span>
+          {% else %}<span class="tag tag-{{ r.reg_status }}">{{ r.reg_status }}</span>{% endif %}
+        </td>
+        <td>
+          {% if r.dispense_time %}
+            {{ r.pharmacist or '—' }}<span class="sub">{{ r.dispense_time.strftime('%m-%d %H:%M') }}</span>
+            {% if r.return_time %}<span class="sub">退回 {{ r.return_time.strftime('%m-%d %H:%M') }}</span>{% endif %}
+          {% else %}<span class="sub">—</span>{% endif %}
+        </td>
+        <td class="ops">
+          {% if r.reg_status == '已收费' and can('dispense.do') %}
+          <form class="inline-form" method="post" action="{{ url_for('dispense', reg_id=r.reg_id) }}"
+                onsubmit="return confirm('确认把这副药发给患者吗？发药后状态变为「已发药」。');">
+            <input type="hidden" name="back" value="{{ request.full_path.rstrip('?') }}">
+            <button class="btn-mini btn-mini-dispense" type="submit">发药</button>
+          </form>
+          {% endif %}
+          {% if can('charge.view') %}
+          <a class="btn-mini btn-mini-plain" href="{{ url_for('charge_page', reg_id=r.reg_id) }}">收费单</a>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+    <div class="empty">没有符合条件的发药记录</div>
+  {% endif %}
+</div>
+
+{% if total_pages > 1 %}
+<div class="pager">
+  {% if prev_url %}<a class="btn-plain" href="{{ prev_url }}">上一页</a>{% endif %}
+  {% for p, url in pager %}
+    <a class="btn-plain {% if p == page %}active{% endif %}" href="{{ url }}">{{ p }}</a>
+  {% endfor %}
+  {% if next_url %}<a class="btn-plain" href="{{ next_url }}">下一页</a>{% endif %}
+</div>
+{% endif %}
+{% endblock %}

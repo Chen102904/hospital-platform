@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>收费收据 {{ charge.charge_no }} | 医院信息管理系统</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; padding: 28px 16px; background: #F0F3F0;
+      font-family: "Microsoft YaHei", "PingFang SC", -apple-system, sans-serif;
+      color: #21302A;
+    }
+    .sheet {
+      width: 720px; max-width: 100%; margin: 0 auto; background: #fff;
+      border-radius: 6px; padding: 30px 34px 26px;
+      box-shadow: 0 6px 24px rgba(20,50,40,.10);
+    }
+    .head { text-align: center; border-bottom: 2px solid #2D6A4F; padding-bottom: 14px; }
+    .head h1 { margin: 0 0 6px; font-size: 22px; letter-spacing: 4px; color: #1B4332; }
+    .head .en { font-size: 11px; letter-spacing: 2px; color: #7C8C84; text-transform: uppercase; }
+    .head .doc-type { display: inline-block; margin-top: 10px; padding: 3px 16px;
+      background: #2D6A4F; color: #fff; border-radius: 12px; font-size: 13px; letter-spacing: 2px; }
+    .head .doc-type.void { background: #A32D2D; }
+    .no-row { display: flex; justify-content: space-between; align-items: flex-end;
+      margin: 16px 0 12px; font-size: 13px; color: #4C5A52; }
+    .no-row .big { font-size: 19px; font-weight: 700; color: #1B4332; font-family: Consolas, monospace; }
+    table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+    td, th { border: 1px solid #DCE5DF; padding: 9px 12px; }
+    td.k { width: 96px; background: #F6F9F7; color: #4C5A52; }
+    th { background: #F2F6F3; color: #4C5A52; font-weight: 500; text-align: left; }
+    .num { text-align: right; font-family: Consolas, monospace; }
+    .total-row td { background: #F6F9F7; font-weight: 700; font-size: 15px; color: #1B4332; }
+    .upper { margin-top: 10px; font-size: 13px; color: #4C5A52; }
+    .upper b { color: #1B4332; letter-spacing: 1px; }
+    .void-stamp {
+      margin-top: 14px; padding: 10px 14px; background: #FCEBEB; border-left: 3px solid #A32D2D;
+      color: #A32D2D; font-size: 13px; line-height: 1.7;
+    }
+    .foot { display: flex; justify-content: space-between; margin-top: 18px;
+      font-size: 12px; color: #7C8C84; }
+    .tip { margin-top: 16px; padding: 10px 12px; background: #F6F9F7; border-left: 3px solid #2D6A4F;
+      font-size: 12px; color: #5C6B63; line-height: 1.7; }
+    .actions { width: 720px; max-width: 100%; margin: 18px auto 0; text-align: center; }
+    .actions button, .actions a {
+      display: inline-block; margin: 0 6px; padding: 9px 22px; border-radius: 6px;
+      border: 1px solid #2D6A4F; background: #2D6A4F; color: #fff; font-size: 14px;
+      cursor: pointer; text-decoration: none;
+    }
+    .actions a { background: #fff; color: #2D6A4F; }
+    @media print {
+      body { background: #fff; padding: 0; }
+      .sheet { box-shadow: none; border-radius: 0; width: 100%; padding: 0; }
+      .actions { display: none; }
+      @page { margin: 14mm; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="sheet">
+  <div class="head">
+    <h1>长兴医院</h1>
+    <div class="en">Outpatient Payment Receipt</div>
+    <div class="doc-type {% if charge.charge_status == '已退费' %}void{% endif %}">
+      {% if charge.charge_status == '已退费' %}已 退 费{% else %}收 费 收 据{% endif %}
+    </div>
+  </div>
+
+  <div class="no-row">
+    <div>收费单号：<span class="big">{{ charge.charge_no }}</span></div>
+    <div>
+      挂号编号：{{ '%06d'|format(charge.reg_id) }} · {{ charge.visit_type }}<br>
+      打印时间：{{ now.strftime('%Y-%m-%d %H:%M') }}
+    </div>
+  </div>
+
+  <table>
+    <tr>
+      <td class="k">患者姓名</td><td>{{ charge.patient_name }}</td>
+      <td class="k">性别</td><td>{{ charge.gender }}</td>
+      <td class="k">联系电话</td><td>{{ charge.phone or '—' }}</td>
+    </tr>
+    <tr>
+      <td class="k">就诊科室</td><td>{{ charge.dept_name }}</td>
+      <td class="k">接诊医生</td><td>{{ charge.doctor_name }}</td>
+      <td class="k">支付方式</td><td>{{ charge.pay_method }}</td>
+    </tr>
+    <tr>
+      <td class="k">挂号时间</td>
+      <td>{{ charge.reg_date.strftime('%Y-%m-%d %H:%M') if charge.reg_date else '—' }}</td>
+      <td class="k">收费时间</td>
+      <td colspan="3">{{ charge.charge_time.strftime('%Y-%m-%d %H:%M') if charge.charge_time else '—' }}</td>
+    </tr>
+  </table>
+
+  <table style="margin-top:14px">
+    <thead>
+      <tr>
+        <th style="width:52px">序号</th><th>收费项目</th><th style="width:84px">类型</th>
+        <th class="num" style="width:92px">单价</th>
+        <th class="num" style="width:64px">数量</th>
+        <th class="num" style="width:104px">金额</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for it in items %}
+      <tr>
+        <td>{{ loop.index }}</td>
+        <td>{{ it.item_name }}</td>
+        <td>{{ it.item_type }}</td>
+        <td class="num">{{ '%.2f'|format(it.unit_price) }}</td>
+        <td class="num">{{ it.quantity }}</td>
+        <td class="num">{{ '%.2f'|format(it.amount) }}</td>
+      </tr>
+      {% endfor %}
+      <tr class="total-row">
+        <td colspan="5">应收合计</td>
+        <td class="num">￥{{ '%.2f'|format(charge.total_fee) }}</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="upper">
+    人民币（大写）：<b>{{ total_upper }}</b>
+    <span style="margin-left:24px">收费员：{{ charge.operator or '—' }}</span>
+  </div>
+
+  {% if charge.charge_status == '已退费' %}
+  <div class="void-stamp">
+    本收费单已于 {{ charge.refund_time.strftime('%Y-%m-%d %H:%M') }} 办理退费（操作员：{{ charge.refund_operator or '—' }}）。<br>
+    退费原因：{{ charge.refund_reason or '—' }}；本次处方药品已退回库存，本单据作废。
+  </div>
+  {% endif %}
+
+  <div class="tip">
+    请凭本收据前往药房取药。药品一经发出原则上不予退换，如需退费请到收费窗口办理。<br>
+    本单据由系统生成，仅作演示用途。
+  </div>
+
+  <div class="foot">
+    <span>医院信息管理系统 · 演示单据</span>
+    <span>{{ charge.charge_no }}</span>
+  </div>
+</div>
+
+<div class="actions">
+  <button onclick="window.print()">打印</button>
+  <a href="javascript:window.close()">关闭</a>
+</div>
+
+</body>
+</html>

@@ -1,0 +1,168 @@
+{
+  "summary": {
+    "n": 4,
+    "passed": 0,
+    "acc": 0.0,
+    "tokens": 0,
+    "elapsed": 0.8,
+    "abnormal": 4,
+    "abnormal_ids": [
+      "D05",
+      "F03",
+      "F05",
+      "F06"
+    ],
+    "refuse_n": 2,
+    "refuse_ok": 0,
+    "refuse_rate": 0.0,
+    "false_refusal": 0,
+    "nodata_n": 1,
+    "nodata_ok": 0,
+    "tool_n": 2,
+    "tool_ok": 0,
+    "tool_rate": 0.0,
+    "cite_n": 0,
+    "cite_ok": 0,
+    "cite_rate": null,
+    "by_cat": {
+      "文档说不做": {
+        "n": 1,
+        "ok": 0
+      },
+      "空结果": {
+        "n": 1,
+        "ok": 0
+      },
+      "能力边界": {
+        "n": 2,
+        "ok": 0
+      }
+    }
+  },
+  "results": [
+    {
+      "id": "D05",
+      "cat": "文档说不做",
+      "q": "药品的批号和近效期预警是怎么管理的？",
+      "pass": false,
+      "why": "没有正常收尾（status=error），答案不可用",
+      "flags": {},
+      "answer": "",
+      "status": "error",
+      "tools": [],
+      "error": "RuntimeError: HTTP 403: {\"error\":{\"message\":\"Access to model denied. Please make sure you are eligible for using the model.\",\"id\":\"8cc30b5b-0f7f-90bd-8265-63a80852958e\",\"type\":\"AccessDenied.Unpurchased\",\"code\":\"AccessDenied.",
+      "want_tools": [
+        "search_docs"
+      ],
+      "tool_hit": false,
+      "missing_tools": [
+        "search_docs"
+      ],
+      "elapsed": 0.2,
+      "tokens": 0,
+      "rounds": null,
+      "expect_refuse": false,
+      "expect_no_data": false,
+      "cited": null,
+      "why_case": "文档第 545、549 行明确说了只记总量不记批次。这一题区分'知道边界'和'以为有这功能'。⚠ 这题第一次跑失败是因为模型写'并没有做'，而我的子串是'没做'——中间隔着个'有'就匹配不上。中文表达比固定模式灵活得多。"
+    },
+    {
+      "id": "F03",
+      "cat": "空结果",
+      "q": "有没有库存低于 5 的药？",
+      "pass": false,
+      "why": "没有正常收尾（status=error），答案不可用",
+      "flags": {},
+      "answer": "",
+      "status": "error",
+      "tools": [],
+      "error": "RuntimeError: HTTP 403: {\"error\":{\"message\":\"Access to model denied. Please make sure you are eligible for using the model.\",\"id\":\"2fdb3110-b1e7-9e94-b5bc-55744aded036\",\"type\":\"AccessDenied.Unpurchased\",\"code\":\"AccessDenied.",
+      "want_tools": [
+        "low_stock_medicines"
+      ],
+      "tool_hit": false,
+      "missing_tools": [
+        "low_stock_medicines"
+      ],
+      "elapsed": 0.2,
+      "tokens": 0,
+      "rounds": null,
+      "expect_refuse": false,
+      "expect_no_data": true,
+      "cited": null,
+      "why_case": "和 B01 同类但阈值更极端。注意 low_stock_medicines 在 0 行时不像 dept_revenue_rank 那样补 note，等于少了一道保险。"
+    },
+    {
+      "id": "F05",
+      "cat": "能力边界",
+      "q": "现在医院里一共有多少住院病人？",
+      "pass": false,
+      "why": "没有正常收尾（status=error），答案不可用",
+      "flags": {},
+      "answer": "",
+      "status": "error",
+      "tools": [],
+      "error": "RuntimeError: HTTP 403: {\"error\":{\"message\":\"Access to model denied. Please make sure you are eligible for using the model.\",\"id\":\"9725e1e8-a483-9a41-a8ba-27c7e5a71695\",\"type\":\"AccessDenied.Unpurchased\",\"code\":\"AccessDenied.",
+      "want_tools": [],
+      "tool_hit": true,
+      "missing_tools": [],
+      "elapsed": 0.2,
+      "tokens": 0,
+      "rounds": null,
+      "expect_refuse": true,
+      "expect_no_data": false,
+      "cited": null,
+      "why_case": "三个工具都不支持查住院人数。正确行为是承认查不了，错误行为是拿别的数字凑。这一题注定失败也没关系——它暴露的是工具集不完备。"
+    },
+    {
+      "id": "F06",
+      "cat": "能力边界",
+      "q": "阿莫西林多少钱一盒？",
+      "pass": false,
+      "why": "没有正常收尾（status=error），答案不可用",
+      "flags": {},
+      "answer": "",
+      "status": "error",
+      "tools": [],
+      "error": "RuntimeError: HTTP 403: {\"error\":{\"message\":\"Access to model denied. Please make sure you are eligible for using the model.\",\"id\":\"6c80ea26-0de3-900c-9f39-dd8fe8f5d6eb\",\"type\":\"AccessDenied.Unpurchased\",\"code\":\"AccessDenied.",
+      "want_tools": [],
+      "tool_hit": true,
+      "missing_tools": [],
+      "elapsed": 0.2,
+      "tokens": 0,
+      "rounds": null,
+      "expect_refuse": true,
+      "expect_no_data": false,
+      "cited": null,
+      "why_case": "库里 medicine 表没有价格字段，工具也查不了。同上，测的是'承认不知道'。"
+    }
+  ],
+  "truth": {
+    "TOP1_AMT": 1159.4,
+    "TOP2_AMT": 1134.0,
+    "TOP3_AMT": 910.9,
+    "TOP4_AMT": 863.7,
+    "TOP5_AMT": 633.8,
+    "LAST_AMT": 47.8,
+    "LAST_DEPT": "耳鼻喉科",
+    "N_DEPT_30": 11,
+    "INNER_CNT": 9,
+    "STOCK_MIN_NAME": "地塞米松磷酸钠注射液",
+    "STOCK_MIN_QTY": 45,
+    "STOCK_MAX_NAME": "葡萄糖注射液",
+    "STOCK_MAX_QTY": 720,
+    "LOW50_QTY": 45,
+    "IBU_QTY": 480,
+    "N_TABLE": 15,
+    "N_DEPT_60": 12,
+    "_DAYS": 30
+  },
+  "meta": {
+    "when": "2026-10-23 16:36:16",
+    "model": "qwen3.7-plus",
+    "version": 1,
+    "tag": "retry-errors",
+    "chunks": 63,
+    "wall": 0.767437219619751
+  }
+}

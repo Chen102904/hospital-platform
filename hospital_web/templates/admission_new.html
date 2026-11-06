@@ -1,0 +1,180 @@
+{% extends "base.html" %}
+{% block title %}办理入院 | 医院信息管理系统{% endblock %}
+
+{% block content %}
+<h1 class="page-title">
+  <a class="link" href="{{ url_for('admissions') }}">住院管理</a>
+  <span class="sub">/ 办理入院</span>
+</h1>
+
+<div class="notice">
+  住院登记是一张<b>住院单</b>：同一位患者可以住很多次院，每住一次留一条记录。
+  在院期间不能再办一次入院（这条规则由数据库的唯一键兜底，不只是靠页面判断）。
+</div>
+
+<div class="card">
+  <form method="post" id="admForm">
+    <div class="form-row">
+      <label>查找患者 <span class="hint">（输入姓名 / 编号 / 手机号过滤）</span></label>
+      <input type="text" id="patientFilter" placeholder="例如：张、12、138…" autocomplete="off">
+    </div>
+
+    <div class="form-row">
+      <label>选择患者 <span class="req">*</span></label>
+      <select name="patient_id" id="patientSelect" required>
+        <option value="">请选择患者</option>
+        {% for p in patients %}
+          <option value="{{ p.patient_id }}" data-keyword="{{ p.keyword }}"
+                  data-inward="{{ '1' if p.in_ward else '' }}"
+            {% if prefill.patient_id == p.patient_id %}selected{% endif %}>
+            {{ p.patient_id }} - {{ p.label }}
+          </option>
+        {% endfor %}
+      </select>
+      <div class="hint" id="patientCount">共 {{ patients|length }} 位在册患者</div>
+      <div class="hint hint-warn" id="inwardHint" hidden></div>
+    </div>
+
+    <div class="form-row">
+      <label>住院科室 <span class="req">*</span></label>
+      <select name="dept_id" id="deptSelect" required>
+        <option value="">请选择科室</option>
+        {% for d in depts %}
+          <option value="{{ d.dept_id }}"
+            {% if prefill.dept_id == d.dept_id %}selected{% endif %}>{{ d.dept_name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="form-row">
+      <label>主治医生 <span class="hint" id="doctorHint">（请先选科室）</span></label>
+      <select name="doctor_id" id="doctorSelect" required disabled>
+        <option value="">请先选择科室</option>
+      </select>
+    </div>
+
+    <div class="field-grid">
+      <div class="form-row">
+        <label>床位号</label>
+        <input type="text" name="bed_no" maxlength="20" placeholder="如 心血管内科-08"
+               value="{{ form.get('bed_no', '') if form else '' }}">
+      </div>
+      <div class="form-row">
+        <label>入院诊断</label>
+        <input type="text" name="admit_diagnosis" maxlength="200" placeholder="如 社区获得性肺炎"
+               value="{{ form.get('admit_diagnosis', '') if form else '' }}">
+      </div>
+    </div>
+
+    <div class="form-row">
+      <label>备注</label>
+      <input type="text" name="remark" maxlength="200" placeholder="选填"
+             value="{{ form.get('remark', '') if form else '' }}">
+    </div>
+
+    <div class="hint">入院时间取办理时刻，由系统自动记录。</div>
+
+    <button class="btn" type="submit">提交入院登记</button>
+  </form>
+</div>
+
+<script>
+  const DOCTORS = {{ doctors_json|safe }};
+  const PREFILL_DOCTOR = "{{ prefill.doctor_id if prefill.doctor_id else '' }}";
+
+  const deptSelect = document.getElementById('deptSelect');
+  const doctorSelect = document.getElementById('doctorSelect');
+  const hint = document.getElementById('doctorHint');
+
+  // ---------- 科室 -> 医生 联动 ----------
+  function refreshDoctors() {
+    const deptId = deptSelect.value;
+    doctorSelect.innerHTML = '';
+    hint.textContent = '';
+
+    if (!deptId) {
+      doctorSelect.disabled = true;
+      doctorSelect.innerHTML = '<option value="">请先选择科室</option>';
+      hint.textContent = '（请先选科室）';
+      return;
+    }
+
+    const list = DOCTORS.filter(d => String(d.dept_id) === String(deptId));
+    if (list.length === 0) {
+      doctorSelect.disabled = true;
+      doctorSelect.innerHTML = '<option value="">该科室暂无可选医生</option>';
+      hint.textContent = '该科室暂无在册医生';
+      return;
+    }
+
+    doctorSelect.disabled = false;
+    let html = '<option value="">请选择医生</option>';
+    list.forEach(d => {
+      const label = d.title ? d.doctor_name + '（' + d.title + '）' : d.doctor_name;
+      const sel = String(d.doctor_id) === PREFILL_DOCTOR ? ' selected' : '';
+      html += '<option value="' + d.doctor_id + '"' + sel + '>' + label + '</option>';
+    });
+    doctorSelect.innerHTML = html;
+    hint.textContent = '（该科室共 ' + list.length + ' 名医生）';
+  }
+  deptSelect.addEventListener('change', refreshDoctors);
+
+  // ---------- 患者搜索过滤 + "已在院"提示 ----------
+  const patientFilter = document.getElementById('patientFilter');
+  const patientCount = document.getElementById('patientCount');
+  const patientSelect = document.getElementById('patientSelect');
+  const inwardHint = document.getElementById('inwardHint');
+
+  const ALL_PATIENTS = Array.from(patientSelect.querySelectorAll('option'))
+    .filter(o => o.value !== '')
+    .map(o => ({
+      value: o.value,
+      text: o.textContent.trim(),
+      inward: o.dataset.inward === '1',
+      keyword: ((o.dataset.keyword || '') + ' ' + o.value + ' ' + o.textContent).toLowerCase()
+    }));
+
+  function checkInward() {
+    const opt = patientSelect.selectedOptions[0];
+    if (opt && opt.dataset.inward === '1') {
+      inwardHint.hidden = false;
+      inwardHint.textContent = '提示：这位患者当前已在院。要办这次住院的出院，请到「住院管理」里对他那一条点「办理出院」。';
+    } else {
+      inwardHint.hidden = true;
+      inwardHint.textContent = '';
+    }
+  }
+
+  function renderPatients(kw) {
+    const current = patientSelect.value;
+    const list = ALL_PATIENTS.filter(p => !kw || p.keyword.indexOf(kw) >= 0);
+
+    patientSelect.innerHTML = '';
+    const blank = document.createElement('option');
+    blank.value = '';
+    blank.textContent = '请选择患者';
+    patientSelect.appendChild(blank);
+
+    list.forEach(p => {
+      const o = document.createElement('option');
+      o.value = p.value;
+      o.textContent = p.text;
+      o.dataset.inward = p.inward ? '1' : '';
+      patientSelect.appendChild(o);
+    });
+
+    if (list.some(p => p.value === current)) patientSelect.value = current;
+    patientCount.textContent = kw
+      ? '匹配 ' + list.length + ' / 共 ' + ALL_PATIENTS.length + ' 位在册患者'
+      : '共 ' + ALL_PATIENTS.length + ' 位在册患者';
+    checkInward();
+  }
+  patientSelect.addEventListener('change', checkInward);
+  patientFilter.addEventListener('input', () => {
+    renderPatients(patientFilter.value.trim().toLowerCase());
+  });
+
+  refreshDoctors();
+  checkInward();
+</script>
+{% endblock %}

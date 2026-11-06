@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>登录 | 医院信息管理系统</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body class="login-body">
+
+<div class="login-wrap">
+  <div class="login-card">
+    <div class="login-brand">
+      <span class="logo">＋</span>
+      <div>
+        <div class="login-title">医院信息管理系统</div>
+        <div class="login-sub">Hospital Information System</div>
+      </div>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% for category, msg in messages %}
+        <div class="flash flash-{{ category }}">{{ msg }}</div>
+      {% endfor %}
+    {% endwith %}
+
+    <form method="post" action="{{ url_for('login') }}">
+      <input type="hidden" name="next" value="{{ next or '' }}">
+      <div class="form-row">
+        <label for="username">登录账号</label>
+        <input id="username" type="text" name="username" value="{{ username or '' }}"
+               placeholder="请输入账号" autocomplete="username" autofocus required>
+      </div>
+      <div class="form-row">
+        <label for="password">密码</label>
+        <input id="password" type="password" name="password"
+               placeholder="请输入密码" autocomplete="current-password" required>
+      </div>
+      <button class="btn btn-block" type="submit">登 录</button>
+    </form>
+
+    <div class="login-demo">
+      <div class="login-demo-title">演示账号（密码见表）</div>
+      <table class="demo-table">
+        <tr><th>角色</th><th>账号</th><th>密码</th><th>能做什么</th></tr>
+        <tr><td>管理员</td><td class="mono">admin</td><td class="mono">admin123</td>
+            <td>全部功能，含操作日志、员工角色</td></tr>
+        <tr><td>挂号员</td><td class="mono">gh01</td><td class="mono">123456</td>
+            <td>挂号、取消、建档、收费</td></tr>
+        <tr><td>医生</td><td class="mono">ys01</td><td class="mono">123456</td>
+            <td>接诊开方、看患者档案</td></tr>
+        <tr><td>药房</td><td class="mono">yf01</td><td class="mono">123456</td>
+            <td>药品目录、出入库、库存流水</td></tr>
+        <tr><td>收费员</td><td class="mono">sf01</td><td class="mono">123456</td>
+            <td>收费、退费、打印收据</td></tr>
+      </table>
+      <div class="login-demo-hint">
+        换个账号登录，能看到左侧菜单和页面按钮跟着变——这就是角色权限在起作用。
+      </div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

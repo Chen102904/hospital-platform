@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+{% block title %}{{ s.title }} · HIS 智能助手{% endblock %}
+
+{% set STATUS_CN = {'ok':'', 'timeout':'超时', 'max_rounds':'到达轮次上限',
+                    'aborted':'中途中断', 'error':'出错', 'empty':'没有返回内容'} %}
+
+{% block body %}
+<div class="topbar">
+  <button class="menu-btn" id="menuBtn" aria-label="打开侧栏">☰</button>
+  <div style="min-width:0">
+    <div class="ht">{{ s.title }}</div>
+    <div class="hs">{{ s.created_at }} 创建 · {{ s.msg_count }} 句问答</div>
+  </div>
+  <div class="sp">
+    <span class="tag">{{ model_name }}</span>
+    <span class="tag gray">知识库 {{ block_count }} 块</span>
+    <span class="tag gray">只读账号 {{ db_user }}</span>
+    <a class="ghost" href="/api/session/{{ s.id }}/export">导出 .md</a>
+    <button class="ghost danger" id="delBtn">删除对话</button>
+  </div>
+</div>
+
+<div class="stream" id="stream">
+  <div class="wrap-inner" id="chat">
+
+  {% if not msgs %}
+    <div class="intro" id="intro">
+      <h2>你好，问点什么？</h2>
+      <p>
+        我手上有三个工具：查科室收入的、查药品库存的、查项目设计文档的。<br>
+        数字我去库里取，设计问题我去文档里找 —— <b>找不到我会直说，不会编。</b>
+      </p>
+      <div class="grid">
+        <div class="card" data-q="近 30 天哪个科室收入最高？">
+          <b>查真实数字</b><span>「近 30 天哪个科室收入最高？」</span>
+        </div>
+        <div class="card" data-q="库存紧张的药有哪些？">
+          <b>查库存告警</b><span>「库存紧张的药有哪些？」</span>
+        </div>
+        <div class="card" data-q="这个系统的密码是怎么存的？">
+          <b>查设计文档</b><span>「这个系统的密码是怎么存的？」</span>
+        </div>
+        <div class="card" data-q="机房那台 UPS 的电池多久换一次？">
+          <b>试试它会不会编</b><span>「机房那台 UPS 的电池多久换一次？」</span>
+        </div>
+      </div>
+    </div>
+  {% endif %}
+
+  {% for m in msgs %}
+    {% if m.role == 'user' %}
+      <div class="msg user">
+        <div class="avatar">我</div>
+        <div class="bubble">{{ m.content }}</div>
+      </div>
+    {% else %}
+      <div class="msg bot">
+        <div class="avatar">AI</div>
+        <div class="col">
+          {% for t in m.tools %}
+          <div class="tool">
+            <div class="row1">
+              <span class="nm">{{ t.name }}</span>
+              <span class="ar">{{ t.args }}</span>
+            </div>
+            <div class="br">→ {{ t.brief }}</div>
+          </div>
+          {% endfor %}
+          <div class="bubble" data-md="1">{{ m.content }}</div>
+          {% if m.elapsed or m.status != 'ok' %}
+          <div class="stat">
+            {% if m.status != 'ok' %}<span class="flag">⚠ {{ STATUS_CN.get(m.status, m.status) }}</span> · {% endif %}
+            {{ m.elapsed or 0 }} 秒{% if m.rounds %} · {{ m.rounds }} 轮{% endif %}{% if m.tokens %} · 约 {{ m.tokens }} tokens（估算）{% endif %}
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    {% endif %}
+  {% endfor %}
+
+  </div>
+</div>
+
+{% if msgs %}
+<div class="chips" id="chips">
+  <button class="chip">那第二名是谁？</button>
+  <button class="chip">库存紧张的药有哪些？</button>
+  <button class="chip">这个系统的密码是怎么存的？</button>
+  <button class="chip">收费流程是怎么走的？</button>
+</div>
+{% endif %}
+
+<div class="hint">Enter 发送，Shift+Enter 换行。回答基于真实数据库与项目文档，查不到它会直说。</div>
+
+<div class="composer">
+  <div class="row">
+    <textarea id="q" rows="1" placeholder="问点什么……"></textarea>
+    <button id="send">发送</button>
+  </div>
+</div>
+
+<script>
+  window.SID = "{{ s.id }}";
+</script>
+{% endblock %}
+
+{% block script %}
+<script src="{{ url_for('static', filename='chat.js') }}"></script>
+{% endblock %}

@@ -1,0 +1,33 @@
+# -*- coding: utf-8 -*-
+# 复制这个文件，改名为 mykey.py，然后把几个值换成你自己的。
+# 这个文件（mykey.py）不要提交到 GitHub，已经写进 .gitignore 了。
+
+# ⚠️ 填地址最容易犯的错：把「Base URL」直接当接口地址。
+#    Base URL 长这样：https://xxx/v1          （文档里叫 base_url、endpoint 前缀）
+#    接口地址长这样：https://xxx/v1/chat/completions  （后面要补 /chat/completions）
+#    少那一段的典型症状是 404。补错主机的症状是 DNS 解析不了 / 405。
+
+# 1. API 地址：完整地址，必须以 /chat/completions 结尾
+API_URL = ""
+
+# 2. 你的密钥，通常以 sk- 开头。粘贴时注意别带首尾空格（脚本会自动清，但你自己看清更保险）
+API_KEY = ""
+
+# 3. 模型名，看平台文档里给的模型列表。填平台名/产品名是错的
+#    例：deepseek-chat / qwen-plus / glm-4-flash
+MODEL = ""
+
+# 3.5 向量化（embedding）模型名 —— 各平台叫法完全不同，填错会 404。
+#     通义      text-embedding-v3        （默认值，不写这一项也行）
+#     硅基流动   BAAI/bge-m3              （免费；收费版才叫 Pro/BAAI/bge-m3）
+#     智谱      embedding-3
+#     模力方舟   bge-m3                   （这家不带 BAAI/ 前缀）
+#     ⚠️ 换平台就一定要改这一行。改完首次运行会重新向量化 63 块文档，
+#        缓存文件名带模型名，新旧不会互相污染。
+EMB_MODEL = "text-embedding-v3"
+
+# 4. 代理（国内平台一律填 "none" 最省事）
+#    ""                      -> 跟随系统环境变量（默认）
+#    "none"                  -> 强制不走代理（报 ProxyError 时用这个）
+#    "http://127.0.0.1:7897" -> 走指定代理（开了 Clash 这类软件、且目标在墙外时用）
+PROXY = "none"

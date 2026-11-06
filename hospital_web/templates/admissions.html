@@ -1,0 +1,138 @@
+{% extends "base.html" %}
+{% block title %}住院管理 | 医院信息管理系统{% endblock %}
+
+{% block content %}
+<h1 class="page-title">住院管理</h1>
+
+<div class="stats">
+  <div class="stat">
+    <div class="label">在院人数</div>
+    <div class="value">{{ stat.in_ward }}</div>
+  </div>
+  <div class="stat">
+    <div class="label">今日入院</div>
+    <div class="value">{{ stat.today_admit }}</div>
+  </div>
+  <div class="stat">
+    <div class="label">今日出院</div>
+    <div class="value">{{ stat.today_discharge }}</div>
+  </div>
+  <div class="stat">
+    <div class="label">累计住院人次</div>
+    <div class="value">{{ stat.total_cnt }}</div>
+  </div>
+</div>
+
+<div class="filters">
+  <span class="filter-label">状态</span>
+  <a class="btn-plain {% if current_status == '全部' %}active{% endif %}"
+     href="{{ url_for('admissions', status='全部', dept_id=current_dept, kw=kw) }}">
+    全部 {{ status_counts.get('全部', 0) }}
+  </a>
+  {% for s in ['在院', '已出院'] %}
+    <a class="btn-plain {% if current_status == s %}active{% endif %}"
+       href="{{ url_for('admissions', status=s, dept_id=current_dept, kw=kw) }}">
+      {{ s }} {{ status_counts.get(s, 0) }}
+    </a>
+  {% endfor %}
+</div>
+
+<div class="toolbar">
+  <form class="search-form" method="get" action="{{ url_for('admissions') }}">
+    <input type="hidden" name="status" value="{{ current_status }}">
+    <select name="dept_id" onchange="this.form.submit()">
+      <option value="">全部科室</option>
+      {% for d in depts %}
+        <option value="{{ d.dept_id }}" {% if current_dept == d.dept_id %}selected{% endif %}>
+          {{ d.dept_name }}
+        </option>
+      {% endfor %}
+    </select>
+    <input type="text" name="kw" value="{{ kw }}" placeholder="患者姓名 / 住院号 / 床位 / 医生">
+    <button class="btn" type="submit">搜索</button>
+    {% if kw or current_dept or current_status != '在院' %}
+      <a class="btn-plain" href="{{ url_for('admissions') }}">重置筛选</a>
+    {% endif %}
+  </form>
+  <div class="auto-refresh"></div>
+  <div class="count-info">
+    共 <b>{{ total }}</b> 条，第 {{ page }} / {{ total_pages }} 页
+    <a class="btn-mini btn-mini-export" href="{{ export_url }}">导出 Excel</a>
+  </div>
+</div>
+
+<div class="card">
+  {% if rows %}
+  <table>
+    <thead>
+      <tr>
+        <th>住院号</th><th>患者</th><th>科室 / 主治医生</th><th>床位</th>
+        <th>入院时间</th><th>住院天数</th><th class="col-status">状态</th><th class="th-ops">操作</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for r in rows %}
+      <tr {% if highlight == r.admission_id %}class="row-focus"{% endif %}>
+        <td>
+          <span class="mono">{{ r.admission_no }}</span>
+          {% if r.history_cnt > 1 %}<span class="sub sub-block">第 {{ r.history_cnt }} 次住院</span>{% endif %}
+        </td>
+        <td>
+          <a class="link" href="{{ url_for('patient_detail', pid=r.patient_id) }}">{{ r.patient_name }}</a>
+          <span class="sub">{{ r.gender }}{% if r.age is not none %} · {{ r.age }}岁{% endif %}</span>
+        </td>
+        <td>{{ r.dept_name }}<span class="sub">{{ r.doctor_name }}{% if r.title %} · {{ r.title }}{% endif %}</span></td>
+        <td>{% if r.bed_no %}<span class="mono">{{ r.bed_no }}</span>{% else %}<span class="sub">—</span>{% endif %}</td>
+        <td>
+          {{ r.admit_time.strftime('%Y-%m-%d %H:%M') if r.admit_time else '' }}
+          {% if r.discharge_time %}
+            <span class="sub sub-block">出院 {{ r.discharge_time.strftime('%m-%d %H:%M') }}</span>
+          {% endif %}
+        </td>
+        <td>{{ r.days }} 天</td>
+        <td>
+          <span class="tag tag-{{ r.status }}">{{ r.status }}</span>
+          {% if r.status == '在院' %}<span class="cell-note">入院诊断：{{ r.admit_diagnosis or '—' }}</span>
+          {% else %}<span class="cell-note">{{ r.discharge_summary or '—' }}</span>{% endif %}
+        </td>
+        <td class="ops">
+          {% if r.status == '在院' and can('admission.discharge') %}
+          <details class="discharge-box">
+            <summary class="btn-mini btn-mini-ok">办理出院</summary>
+            <form class="discharge-form" method="post"
+                  action="{{ url_for('admission_discharge', aid=r.admission_id) }}">
+              <input type="hidden" name="back" value="{{ request.full_path.rstrip('?') }}">
+              <label>出院时间</label>
+              <input type="datetime-local" name="discharge_time" value="{{ now_str }}">
+              <label>出院小结</label>
+              <input type="text" name="discharge_summary" maxlength="200"
+                     placeholder="如：症状缓解，各项指标平稳">
+              <button class="btn-mini btn-mini-danger" type="submit">确认出院</button>
+            </form>
+          </details>
+          {% endif %}
+          <a class="btn-mini btn-mini-plain" href="{{ url_for('print_admission', aid=r.admission_id) }}"
+             target="_blank">住院单</a>
+          <a class="btn-mini btn-mini-plain" href="{{ url_for('patient_detail', pid=r.patient_id) }}">档案</a>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+    <div class="empty">
+      {% if current_status == '在院' %}当前没有在院患者{% else %}没有符合条件的住院记录{% endif %}
+    </div>
+  {% endif %}
+</div>
+
+{% if total_pages > 1 %}
+<div class="pager">
+  {% if prev_url %}<a class="btn-plain" href="{{ prev_url }}">上一页</a>{% endif %}
+  {% for p, url in pager %}
+    <a class="btn-plain {% if p == page %}active{% endif %}" href="{{ url }}">{{ p }}</a>
+  {% endfor %}
+  {% if next_url %}<a class="btn-plain" href="{{ next_url }}">下一页</a>{% endif %}
+</div>
+{% endif %}
+{% endblock %}

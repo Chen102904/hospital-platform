@@ -1,0 +1,403 @@
+{% extends "base.html" %}
+{% block title %}数据概览 | 医院信息管理系统{% endblock %}
+
+{% block content %}
+<h1 class="page-title">数据概览</h1>
+
+<div class="stats">
+  <div class="stat">
+    <div class="label">患者总数</div>
+    <div class="value">{{ counts.patient_count }}</div>
+  </div>
+  <div class="stat">
+    <div class="label">在册医生</div>
+    <div class="value">{{ counts.doctor_count }}</div>
+  </div>
+  <div class="stat">
+    <div class="label">累计挂号</div>
+    <div class="value">{{ counts.reg_count }}</div>
+  </div>
+  <div class="stat">
+    <div class="label">今日挂号</div>
+    <div class="value">{{ counts.today_reg }}</div>
+  </div>
+</div>
+
+<div class="stats">
+  <div class="stat">
+    <div class="label">累计收入（已收费）</div>
+    <div class="value">￥{{ '%.2f'|format(income_stat.total_income) }}</div>
+  </div>
+  <div class="stat">
+    <div class="label">今日收入</div>
+    <div class="value">￥{{ '%.2f'|format(income_stat.today_income) }}</div>
+  </div>
+  <div class="stat">
+    <div class="label">待收费（已就诊未缴费）</div>
+    <div class="value value-warn">{{ counts.to_charge }}</div>
+  </div>
+  <div class="stat">
+    <div class="label">退费金额 / 笔数</div>
+    <div class="value {% if income_stat.refund_income %}value-danger{% endif %}" style="font-size:20px">
+      ￥{{ '%.2f'|format(income_stat.refund_income) }} / {{ income_stat.refund_cnt or 0 }}
+    </div>
+  </div>
+</div>
+
+<h2 class="section-title">数据图表</h2>
+
+<div class="card">
+  <h2>近 30 天挂号量趋势</h2>
+  <div id="chart-trend" class="chart chart-lg"></div>
+</div>
+
+<div class="card">
+  <h2>近 30 天门诊收入趋势（元）</h2>
+  <div id="chart-income" class="chart chart-lg"></div>
+</div>
+
+<div class="grid-2">
+  <div class="card">
+    <h2>各科室挂号量（今日 / 累计）</h2>
+    <div id="chart-dept" class="chart"></div>
+  </div>
+  <div class="card">
+    <h2>挂号状态分布</h2>
+    <div id="chart-status" class="chart"></div>
+  </div>
+</div>
+
+<div class="grid-2">
+  <div class="card">
+    <h2>医生接诊量排行（前 8）</h2>
+    <div id="chart-doctor" class="chart"></div>
+  </div>
+  <div class="card">
+    <h2>初诊 / 复诊占比</h2>
+    <div id="chart-visit" class="chart"></div>
+  </div>
+</div>
+
+<div class="grid-2">
+  <div class="card">
+    <h2>支付方式占比（按金额）</h2>
+    <div id="chart-pay" class="chart"></div>
+  </div>
+  <div class="card">
+    <h2>收入构成</h2>
+    <div class="kv-row">
+      <span class="kv-key">挂号费收入</span>
+      <span class="kv-val">￥{{ '%.2f'|format(income_stat.reg_income) }}</span>
+    </div>
+    <div class="kv-row">
+      <span class="kv-key">药品费收入</span>
+      <span class="kv-val">￥{{ '%.2f'|format(income_stat.drug_income) }}</span>
+    </div>
+    <div class="kv-row">
+      <span class="kv-key">累计收费单数</span>
+      <span class="kv-val">{{ income_stat.charge_cnt }} 张</span>
+    </div>
+    <div class="kv-row">
+      <span class="kv-key">已退费金额</span>
+      <span class="kv-val">￥{{ '%.2f'|format(income_stat.refund_income) }}</span>
+    </div>
+    <div class="kv-row">
+      <span class="kv-key">实收合计</span>
+      <span class="kv-val">￥{{ '%.2f'|format(income_stat.total_income) }}</span>
+    </div>
+    <h2 class="mt-24">各支付方式明细</h2>
+    {% if pay_stats %}
+      {% for p in pay_stats %}
+      <div class="kv-row">
+        <span class="kv-key">{{ p.pay_method }}</span>
+        <span class="kv-val">{{ p.cnt }} 笔 · ￥{{ '%.2f'|format(p.amount) }}</span>
+      </div>
+      {% endfor %}
+    {% else %}
+      <div class="empty">暂无收费记录</div>
+    {% endif %}
+  </div>
+</div>
+
+<h2 class="section-title">数据明细</h2>
+
+<div class="grid-2">
+  <div class="card">
+    <h2>各科室挂号量</h2>
+    {% if dept_stats %}
+      {% for d in dept_stats %}
+      <div class="bar-row">
+        <div class="bar-name">{{ d.dept_name }}</div>
+        <div class="bar-track">
+          <div class="bar-fill" style="width: {{ d.percent }}%;"></div>
+        </div>
+        <div class="bar-cnt">{{ d.cnt }}</div>
+      </div>
+      {% endfor %}
+    {% else %}
+      <div class="empty">暂无数据</div>
+    {% endif %}
+  </div>
+
+  <div class="card">
+    <h2>挂号状态分布</h2>
+    {% if status_stats %}
+      {% for s in status_stats %}
+      <div class="bar-row">
+        <div class="bar-name">
+          <a class="link" href="{{ url_for('registrations', status=s.reg_status) }}">{{ s.reg_status }}</a>
+        </div>
+        <div class="bar-track">
+          <div class="bar-fill bar-{{ s.reg_status }}" style="width: {{ s.percent }}%;"></div>
+        </div>
+        <div class="bar-cnt">{{ s.cnt }}</div>
+      </div>
+      {% endfor %}
+    {% else %}
+      <div class="empty">暂无数据</div>
+    {% endif %}
+
+    <h2 class="mt-24">初诊 / 复诊占比</h2>
+    {% for v in visit_stats %}
+    <div class="kv-row">
+      <span class="kv-key">{{ v.visit_type }}</span>
+      <span class="kv-val">{{ v.cnt }} 人次</span>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+
+<div class="card">
+  <h2>医生接诊量排行（前 8 名）</h2>
+  {% if doctor_rank %}
+  <table>
+    <thead>
+      <tr><th>排名</th><th>医生</th><th>职称</th><th>科室</th><th>接诊挂号数</th></tr>
+    </thead>
+    <tbody>
+      {% for d in doctor_rank %}
+      <tr>
+        <td>{{ loop.index }}</td>
+        <td>{{ d.doctor_name }}</td>
+        <td>{{ d.title or '—' }}</td>
+        <td>{{ d.dept_name or '—' }}</td>
+        <td><b>{{ d.cnt }}</b></td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+    <div class="empty">暂无数据</div>
+  {% endif %}
+</div>
+
+<div class="card">
+  <h2>最近挂号</h2>
+  {% if latest_regs %}
+  <table>
+    <thead>
+      <tr><th>编号</th><th>患者</th><th>医生</th><th>科室</th><th>类型</th><th>挂号时间</th><th>状态</th></tr>
+    </thead>
+    <tbody>
+      {% for r in latest_regs %}
+      <tr>
+        <td>{{ r.reg_id }}</td>
+        <td>{{ r.patient_name }}</td>
+        <td>{{ r.doctor_name }}</td>
+        <td>{{ r.dept_name }}</td>
+        <td><span class="tag tag-type-{{ r.visit_type }}">{{ r.visit_type }}</span></td>
+        <td>{{ r.reg_date.strftime('%Y-%m-%d %H:%M') if r.reg_date else '' }}</td>
+        <td><span class="tag tag-{{ r.reg_status }}">{{ r.reg_status }}</span></td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+    <div class="empty">暂无挂号记录</div>
+  {% endif %}
+</div>
+
+<div class="card" id="stock">
+  <h2>药品库存预警（库存低于 {{ low_stock_limit }}）</h2>
+  {% if low_stock %}
+  <table>
+    <thead>
+      <tr><th>药品名称</th><th>规格</th><th>剩余库存</th><th>单位</th><th>状态</th><th></th></tr>
+    </thead>
+    <tbody>
+      {% for m in low_stock %}
+      <tr>
+        <td>{{ m.medicine_name }}</td>
+        <td>{{ m.spec }}</td>
+        <td><span class="tag tag-{{ m.level }}">{{ m.stock }}</span></td>
+        <td>{{ m.unit }}</td>
+        <td>
+          <span class="tag tag-{% if m.level == 'danger' %}danger{% else %}warn{% endif %}">
+            {{ '紧缺' if m.level == 'danger' else '预警' }}
+          </span>
+        </td>
+        <td><a class="link" href="{{ url_for('medicines', kw=m.medicine_name) }}">去补货</a></td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+    <div class="empty">库存充足，暂无预警</div>
+  {% endif %}
+</div>
+
+<script src="{{ url_for('static', filename='echarts.min.js') }}"></script>
+<script>
+(function () {
+  var DATA = {{ chart_json | safe }};
+  var GREEN = '#2D6A4F', GREEN_L = '#52B788', GOLD = '#C9A227', GRAY = '#9AA8A0';
+  var axisLabel = { color: '#5C6B63', fontSize: 11 };
+  var axisLine = { lineStyle: { color: '#D6E2DA' } };
+  var charts = [];
+
+  function make(id, option) {
+    var el = document.getElementById(id);
+    if (!el) return;
+    var ins = echarts.init(el);
+    ins.setOption(option);
+    charts.push(ins);
+  }
+
+  // 1. 近 30 天趋势（折线 + 面积）
+  make('chart-trend', {
+    grid: { left: 46, right: 22, top: 26, bottom: 34 },
+    tooltip: { trigger: 'axis', formatter: '{b}<br/>挂号 {c} 人次' },
+    xAxis: {
+      type: 'category', data: DATA.trend.labels, boundaryGap: false,
+      axisLabel: axisLabel, axisLine: axisLine,
+      axisTick: { show: false }
+    },
+    yAxis: {
+      type: 'value', minInterval: 1, axisLabel: axisLabel, axisLine: { show: false },
+      splitLine: { lineStyle: { color: '#EEF3EF' } }
+    },
+    series: [{
+      type: 'line', data: DATA.trend.values, smooth: true, symbol: 'circle', symbolSize: 5,
+      itemStyle: { color: GREEN }, lineStyle: { width: 2.6, color: GREEN },
+      areaStyle: {
+        color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+          { offset: 0, color: 'rgba(45,106,79,.30)' },
+          { offset: 1, color: 'rgba(45,106,79,.02)' }
+        ])
+      }
+    }]
+  });
+
+  // 1b. 近 30 天收入趋势
+  make('chart-income', {
+    grid: { left: 62, right: 22, top: 26, bottom: 34 },
+    tooltip: { trigger: 'axis', formatter: '{b}<br/>收入 ￥{c}' },
+    xAxis: {
+      type: 'category', data: DATA.income.labels, boundaryGap: false,
+      axisLabel: axisLabel, axisLine: axisLine, axisTick: { show: false }
+    },
+    yAxis: {
+      type: 'value', axisLabel: axisLabel, axisLine: { show: false },
+      splitLine: { lineStyle: { color: '#EEF3EF' } }
+    },
+    series: [{
+      type: 'line', data: DATA.income.values, smooth: true, symbol: 'circle', symbolSize: 5,
+      itemStyle: { color: GOLD }, lineStyle: { width: 2.6, color: GOLD },
+      areaStyle: {
+        color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+          { offset: 0, color: 'rgba(201,162,39,.30)' },
+          { offset: 1, color: 'rgba(201,162,39,.02)' }
+        ])
+      }
+    }]
+  });
+
+  // 2. 科室挂号量（今日 / 累计 双柱）
+  make('chart-dept', {
+    grid: { left: 46, right: 16, top: 34, bottom: 46 },
+    tooltip: { trigger: 'axis' },
+    legend: { data: ['今日', '累计'], top: 0, textStyle: { color: '#5C6B63', fontSize: 11 } },
+    xAxis: {
+      type: 'category', data: DATA.dept.labels, axisLabel: axisLabel,
+      axisLine: axisLine, axisTick: { show: false }
+    },
+    yAxis: {
+      type: 'value', minInterval: 1, axisLabel: axisLabel, axisLine: { show: false },
+      splitLine: { lineStyle: { color: '#EEF3EF' } }
+    },
+    series: [
+      { name: '今日', type: 'bar', data: DATA.dept.today, barMaxWidth: 18,
+        itemStyle: { color: GOLD, borderRadius: [3, 3, 0, 0] } },
+      { name: '累计', type: 'bar', data: DATA.dept.total, barMaxWidth: 18,
+        itemStyle: { color: GREEN, borderRadius: [3, 3, 0, 0] } }
+    ]
+  });
+
+  // 3. 状态分布（环形）
+  var statusColor = { '已挂号': GOLD, '已就诊': GREEN, '已收费': '#2C5282',
+                      '已发药': '#40916C', '已退费': '#B7791F', '已取消': GRAY };
+  make('chart-status', {
+    tooltip: { trigger: 'item', formatter: '{b}：{c} 条（{d}%）' },
+    legend: { bottom: 0, textStyle: { color: '#5C6B63', fontSize: 11 } },
+    series: [{
+      type: 'pie', radius: ['45%', '68%'], center: ['50%', '46%'],
+      label: { formatter: '{b}\n{c} 条', color: '#4C5A52', fontSize: 11 },
+      data: DATA.status.labels.map(function (n, i) {
+        return { name: n, value: DATA.status.values[i], itemStyle: { color: statusColor[n] || GREEN_L } };
+      })
+    }]
+  });
+
+  // 4. 医生接诊排行（横向柱）
+  make('chart-doctor', {
+    grid: { left: 74, right: 34, top: 16, bottom: 24 },
+    tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
+    xAxis: {
+      type: 'value', minInterval: 1, axisLabel: axisLabel, axisLine: { show: false },
+      splitLine: { lineStyle: { color: '#EEF3EF' } }
+    },
+    yAxis: {
+      type: 'category', data: DATA.doctor.labels.slice().reverse(),
+      axisLabel: axisLabel, axisLine: axisLine, axisTick: { show: false }
+    },
+    series: [{
+      type: 'bar', data: DATA.doctor.values.slice().reverse(), barMaxWidth: 14,
+      label: { show: true, position: 'right', color: '#5C6B63', fontSize: 11 },
+      itemStyle: { color: GREEN_L, borderRadius: [0, 3, 3, 0] }
+    }]
+  });
+
+  // 5. 初诊 / 复诊（环形）
+  make('chart-visit', {
+    tooltip: { trigger: 'item', formatter: '{b}：{c} 人次（{d}%）' },
+    legend: { bottom: 0, textStyle: { color: '#5C6B63', fontSize: 11 } },
+    series: [{
+      type: 'pie', radius: ['45%', '68%'], center: ['50%', '46%'],
+      label: { formatter: '{b}\n{c} 人次', color: '#4C5A52', fontSize: 11 },
+      data: DATA.visit.labels.map(function (n, i) {
+        return { name: n, value: DATA.visit.values[i],
+                 itemStyle: { color: n === '复诊' ? GOLD : GREEN } };
+      })
+    }]
+  });
+
+  // 6. 支付方式占比（环形，按金额）
+  var payColor = [GREEN, '#2C5282', GOLD, GREEN_L, GRAY];
+  make('chart-pay', {
+    tooltip: { trigger: 'item', formatter: '{b}：￥{c}（{d}%）' },
+    legend: { bottom: 0, textStyle: { color: '#5C6B63', fontSize: 11 } },
+    series: [{
+      type: 'pie', radius: ['45%', '68%'], center: ['50%', '46%'],
+      label: { formatter: '{b}\n￥{c}', color: '#4C5A52', fontSize: 11 },
+      data: DATA.pay.labels.map(function (n, i) {
+        return { name: n, value: DATA.pay.values[i], itemStyle: { color: payColor[i % payColor.length] } };
+      })
+    }]
+  });
+
+  window.addEventListener('resize', function () {
+    charts.forEach(function (c) { c.resize(); });
+  });
+})();
+</script>
+{% endblock %}

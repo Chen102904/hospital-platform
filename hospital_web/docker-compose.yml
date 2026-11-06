@@ -1,0 +1,45 @@
+# 医院信息管理系统 一键启动
+# 用法：docker compose up --build
+# 首次启动会自动：建库建表 → 灌演示数据 → 起 Flask
+# 访问：http://localhost:5000  账号 admin / admin123
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: his_mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: his_dev_only
+      MYSQL_DATABASE: hospital_db
+      TZ: Asia/Shanghai
+    command: --default-authentication-plugin=mysql_native_password --character-set-server=utf8mb4 --collation-server=utf8mb4_general_ci
+    ports:
+      - "3306:3306"
+    volumes:
+      - his_mysql_data:/var/lib/mysql
+      # 首次启动自动执行：建 15 张表 → 灌演示数据（顺序按文件名）
+      - ./docker/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-phis_dev_only"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  web:
+    build: .
+    container_name: his_web
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      DB_HOST: mysql
+      DB_PORT: "3306"
+      DB_USER: root
+      DB_PASSWORD: his_dev_only
+      DB_NAME: hospital_db
+      TZ: Asia/Shanghai
+    ports:
+      - "5000:5000"
+
+volumes:
+  his_mysql_data:

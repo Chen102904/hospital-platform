@@ -1,0 +1,320 @@
+{% extends "base.html" %}
+{% block title %}新增挂号 | 医院信息管理系统{% endblock %}
+
+{% block content %}
+<h1 class="page-title">新增挂号</h1>
+
+{% if parent %}
+<div class="notice">
+  本次为 <b>复诊挂号</b>，关联原挂号
+  <b>#{{ parent.reg_id }}</b>（{{ parent.reg_date.strftime('%Y-%m-%d') }} ·
+  {{ parent.patient_name }} · {{ parent.doctor_name }}）
+</div>
+{% endif %}
+
+{% set cur_mode = (form.get('patient_mode') if form else None) or 'existing' %}
+
+<div class="card">
+  <form method="post" id="regForm">
+    <div class="form-row">
+      <label>患者来源</label>
+      <div class="radio-group">
+        <label class="radio">
+          <input type="radio" name="patient_mode" value="existing" id="modeExisting"
+                 {% if cur_mode != 'new' %}checked{% endif %}>
+          <span>已有患者</span>
+        </label>
+        <label class="radio">
+          <input type="radio" name="patient_mode" value="new" id="modeNew"
+                 {% if cur_mode == 'new' %}checked{% endif %}>
+          <span>新建患者（现场建档）</span>
+        </label>
+        <span class="hint">第一次来院、系统里还没有档案的患者，选「新建患者」</span>
+      </div>
+    </div>
+
+    <!-- ---------- 已有患者 ---------- -->
+    <div id="existingBox">
+      <div class="form-row">
+        <label>查找患者 <span class="hint">（输入姓名 / 编号 / 手机号过滤）</span></label>
+        <input type="text" id="patientFilter" placeholder="例如：张、12、138…" autocomplete="off">
+      </div>
+      <div class="form-row">
+        <label>选择患者</label>
+        <select name="patient_id" id="patientSelect">
+          <option value="">请选择患者</option>
+          {% for p in patients %}
+            <option value="{{ p.patient_id }}" data-keyword="{{ p.keyword }}"
+              {% if prefill.patient_id == p.patient_id %}selected{% endif %}>
+              {{ p.patient_id }} - {{ p.label }}
+            </option>
+          {% endfor %}
+        </select>
+        <div class="hint" id="patientCount">共 {{ patients|length }} 位在册患者</div>
+      </div>
+    </div>
+
+    <!-- ---------- 新建患者 ---------- -->
+    <div id="newBox" class="sub-panel"{% if cur_mode != 'new' %} hidden{% endif %}>
+      <div class="sub-panel-title">新患者建档信息</div>
+      <div class="field-grid">
+        <div class="form-row">
+          <label>姓名 <span class="req">*</span></label>
+          <input type="text" name="new_name" id="newName" maxlength="30"
+                 placeholder="请输入患者姓名"
+                 value="{{ form.get('new_name', '') if form else '' }}">
+        </div>
+        <div class="form-row">
+          <label>性别 <span class="req">*</span></label>
+          <div class="radio-group">
+            <label class="radio">
+              <input type="radio" name="new_gender" value="男"
+                     {% if not form or form.get('new_gender') != '女' %}checked{% endif %}>
+              <span>男</span>
+            </label>
+            <label class="radio">
+              <input type="radio" name="new_gender" value="女"
+                     {% if form and form.get('new_gender') == '女' %}checked{% endif %}>
+              <span>女</span>
+            </label>
+          </div>
+        </div>
+        <div class="form-row">
+          <label>出生日期</label>
+          <input type="date" name="new_birth_date"
+                 value="{{ form.get('new_birth_date', '') if form else '' }}">
+        </div>
+        <div class="form-row">
+          <label>联系电话</label>
+          <input type="text" name="new_phone" maxlength="20" placeholder="11 位手机号"
+                 value="{{ form.get('new_phone', '') if form else '' }}">
+        </div>
+        <div class="form-row">
+          <label>身份证号</label>
+          <input type="text" name="new_id_card" maxlength="18" placeholder="18 位，末位可为 X"
+                 value="{{ form.get('new_id_card', '') if form else '' }}">
+        </div>
+        <div class="form-row">
+          <label>家庭住址</label>
+          <input type="text" name="new_address" maxlength="200" placeholder="省 / 市 / 区 / 详细地址"
+                 value="{{ form.get('new_address', '') if form else '' }}">
+        </div>
+      </div>
+      <div class="hint">
+        带 <span class="req">*</span> 为必填。身份证号在系统内唯一，如果提示已建档，
+        请切回「已有患者」直接选中他。
+      </div>
+    </div>
+
+    <div class="form-row">
+      <label>就诊类型</label>
+      <div class="radio-group">
+        <label class="radio">
+          <input type="radio" name="visit_type" value="初诊"
+                 {% if prefill.visit_type != '复诊' %}checked{% endif %}>
+          <span>初诊</span>
+        </label>
+        <label class="radio">
+          <input type="radio" name="visit_type" value="复诊"
+                 {% if prefill.visit_type == '复诊' %}checked{% endif %}>
+          <span>复诊</span>
+        </label>
+        <span class="hint">复诊会关联到指定的原挂号记录，可在挂号列表或患者档案里点「复诊挂号」进入</span>
+      </div>
+      <input type="hidden" name="parent_reg_id" value="{{ prefill.parent_reg_id or '' }}">
+    </div>
+
+    <div class="form-row">
+      <label>就诊日期 <span class="req">*</span></label>
+      <input type="date" name="work_date" id="workDate" required
+             value="{{ prefill.work_date }}" min="{{ today }}" max="{{ max_date }}">
+      <div class="hint">只能挂今天起 {{ book_ahead_days }} 天内已放号的排班（最晚 {{ max_date }}）</div>
+    </div>
+
+    <div class="form-row">
+      <label>就诊时段 <span class="req">*</span></label>
+      <div class="radio-group" id="periodGroup">
+        {% for p in time_periods %}
+        <label class="radio">
+          <input type="radio" name="time_period" value="{{ p }}"
+                 {% if prefill.time_period == p %}checked{% endif %}>
+          <span>{{ p }}</span>
+        </label>
+        {% endfor %}
+      </div>
+      <div class="hint" id="quotaHint">选择医生与时段后，这里显示该班次还剩多少号</div>
+    </div>
+
+    <div class="form-row">
+      <label>科室</label>
+      <select name="dept_id" id="deptSelect" required>
+        <option value="">请选择科室</option>
+        {% for d in depts %}
+          <option value="{{ d.dept_id }}"
+            {% if prefill.dept_id == d.dept_id %}selected{% endif %}>{{ d.dept_name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="form-row">
+      <label>医生 <span class="hint" id="doctorHint">（请先选科室）</span></label>
+      <select name="doctor_id" id="doctorSelect" required disabled>
+        <option value="">请先选择科室</option>
+      </select>
+    </div>
+
+    <div class="form-row">
+      <label>挂号费（元）</label>
+      <input type="number" name="reg_fee" step="0.01"
+             value="{{ '%.2f'|format(prefill.reg_fee) if prefill.reg_fee else '10.00' }}" required>
+    </div>
+
+    <button class="btn" type="submit" id="submitBtn">提交挂号</button>
+  </form>
+</div>
+
+<script>
+  const DOCTORS = {{ doctors_json|safe }};
+  const PREFILL_DOCTOR = "{{ prefill.doctor_id if prefill.doctor_id else '' }}";
+
+  const deptSelect = document.getElementById('deptSelect');
+  const doctorSelect = document.getElementById('doctorSelect');
+  const hint = document.getElementById('doctorHint');
+
+  // ---------- 1. 科室 -> 医生 联动 ----------
+  function refreshDoctors() {
+    const deptId = deptSelect.value;
+    doctorSelect.innerHTML = '';
+    hint.textContent = '';
+
+    if (!deptId) {
+      doctorSelect.disabled = true;
+      doctorSelect.innerHTML = '<option value="">请先选择科室</option>';
+      hint.textContent = '（请先选科室）';
+      return;
+    }
+
+    const list = DOCTORS.filter(d => String(d.dept_id) === String(deptId));
+    if (list.length === 0) {
+      doctorSelect.disabled = true;
+      doctorSelect.innerHTML = '<option value="">该科室暂无可选医生</option>';
+      hint.textContent = '该科室暂无在册医生';
+      return;
+    }
+
+    doctorSelect.disabled = false;
+    let html = '<option value="">请选择医生</option>';
+    list.forEach(d => {
+      const label = d.title ? d.doctor_name + '（' + d.title + '）' : d.doctor_name;
+      const sel = String(d.doctor_id) === PREFILL_DOCTOR ? ' selected' : '';
+      html += '<option value="' + d.doctor_id + '"' + sel + '>' + label + '</option>';
+    });
+    doctorSelect.innerHTML = html;
+    hint.textContent = '（该科室共 ' + list.length + ' 名医生）';
+  }
+  deptSelect.addEventListener('change', refreshDoctors);
+
+  // ---------- 2. 患者来源切换 ----------
+  const modeExisting = document.getElementById('modeExisting');
+  const modeNew = document.getElementById('modeNew');
+  const existingBox = document.getElementById('existingBox');
+  const newBox = document.getElementById('newBox');
+  const patientSelect = document.getElementById('patientSelect');
+  const newName = document.getElementById('newName');
+  const submitBtn = document.getElementById('submitBtn');
+
+  function applyMode() {
+    const isNew = modeNew.checked;
+    newBox.hidden = !isNew;
+    existingBox.hidden = isNew;
+    // 只给"当前这一侧"加必填，另一侧隐藏着就不参与校验
+    patientSelect.required = !isNew;
+    newName.required = isNew;
+    submitBtn.textContent = isNew ? '建档并挂号' : '提交挂号';
+  }
+  modeExisting.addEventListener('change', applyMode);
+  modeNew.addEventListener('change', applyMode);
+
+  // ---------- 3. 患者搜索过滤 ----------
+  const patientFilter = document.getElementById('patientFilter');
+  const patientCount = document.getElementById('patientCount');
+  // 先把完整名单存到 JS 里，过滤时重建下拉框（比直接隐藏 option 兼容性好）
+  const ALL_PATIENTS = Array.from(patientSelect.querySelectorAll('option'))
+    .filter(o => o.value !== '')
+    .map(o => ({
+      value: o.value,
+      text: o.textContent.trim(),
+      keyword: ((o.dataset.keyword || '') + ' ' + o.value + ' ' + o.textContent).toLowerCase()
+    }));
+
+  function renderPatients(kw) {
+    const current = patientSelect.value;
+    const list = ALL_PATIENTS.filter(p => !kw || p.keyword.indexOf(kw) >= 0);
+
+    patientSelect.innerHTML = '';
+    const blank = document.createElement('option');
+    blank.value = '';
+    blank.textContent = '请选择患者';
+    patientSelect.appendChild(blank);
+
+    list.forEach(p => {
+      const o = document.createElement('option');
+      o.value = p.value;
+      o.textContent = p.text;
+      patientSelect.appendChild(o);
+    });
+
+    if (list.some(p => p.value === current)) patientSelect.value = current;
+
+    patientCount.textContent = kw
+      ? '匹配 ' + list.length + ' 位 / 共 ' + ALL_PATIENTS.length + ' 位在册患者'
+      : '共 ' + ALL_PATIENTS.length + ' 位在册患者';
+  }
+  patientFilter.addEventListener('input', () => {
+    renderPatients(patientFilter.value.trim().toLowerCase());
+  });
+
+  // ---------- 4. 号源余量提示 ----------
+  const SCHEDULES = {{ schedules_json|safe }};
+  const workDateEl = document.getElementById('workDate');
+  const quotaHint = document.getElementById('quotaHint');
+  const periodGroup = document.getElementById('periodGroup');
+
+  function currentPeriod() {
+    const checked = periodGroup.querySelector('input[name=time_period]:checked');
+    return checked ? checked.value : '';
+  }
+
+  function refreshQuota() {
+    const did = doctorSelect.value, day = workDateEl.value, period = currentPeriod();
+    if (!did || !day || !period) {
+      quotaHint.textContent = '选择医生与时段后，这里显示该班次还剩多少号';
+      quotaHint.className = 'hint';
+      return;
+    }
+    const s = SCHEDULES.find(x => String(x.doctor_id) === String(did)
+                               && x.work_date === day && x.time_period === period);
+    if (!s) {
+      quotaHint.textContent = day + ' ' + period + '：该医生没有排班，请换日期或时段';
+      quotaHint.className = 'hint hint-warn';
+      return;
+    }
+    if (s.status !== '正常') {
+      quotaHint.textContent = day + ' ' + period + '：该医生这一班已停诊';
+      quotaHint.className = 'hint hint-warn';
+      return;
+    }
+    const tip = day + ' ' + period + '：号源 ' + s.total + '，已挂 ' + s.booked + '，剩余 ' + s.left;
+    quotaHint.textContent = s.left > 0 ? tip : tip + '（已挂满，请换一个时段）';
+    quotaHint.className = s.left > 0 ? 'hint' : 'hint hint-warn';
+  }
+
+  doctorSelect.addEventListener('change', refreshQuota);
+  workDateEl.addEventListener('change', refreshQuota);
+  periodGroup.addEventListener('change', refreshQuota);
+
+  refreshDoctors();
+  applyMode();
+  refreshQuota();
+</script>
+{% endblock %}

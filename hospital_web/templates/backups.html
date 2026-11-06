@@ -1,0 +1,120 @@
+{% extends "base.html" %}
+{% block title %}数据存档 | 医院信息管理系统{% endblock %}
+
+{% block content %}
+<h1 class="page-title">数据存档<span class="page-sub">把当前数据库整体存成快照，乱操作之后一键倒回去</span></h1>
+
+<div class="card">
+  <div class="hint" style="display:block">
+    <b>这一页解决什么问题：</b>系统里的每一次点选都会真的写进 MySQL，演示时随手挂号、发药、改库存，
+    数据就再也不"干净"了。存档就是给数据库拍张照片——点一次"新建存档"，当时的所有数据
+    （15 张表 <b>{{ total }}</b> 行）会被导出成一份文件；之后不管怎么改，点"恢复"就能整体倒回去。
+    <br><br>
+    <b>建议先存一份「{{ baseline_name }}」</b>：这就是"定死的那批演示数据"，以后所有演示都从它出发，
+    乱了就恢复，永远回到同一个起点。
+  </div>
+</div>
+
+{% if can('backup.manage') %}
+<div class="card">
+  <h2>新建存档</h2>
+  <form class="toolbar" method="post" action="{{ url_for('backup_create') }}">
+    <label class="filter-label">存档名称</label>
+    <input type="text" name="name" maxlength="30" placeholder="例如：演示初稿 / 面试前 / 功能验收前"
+           style="max-width:320px" required>
+    <button class="btn" type="submit">保存当前数据为存档</button>
+    {% if not (snaps|selectattr('is_baseline')|list) %}
+    <a class="btn-plain" href="#"
+       onclick="document.querySelector('input[name=name]').value='{{ baseline_name }}';
+                document.querySelector('.toolbar button[type=submit]').click(); return false;">
+      直接存为「{{ baseline_name }}」
+    </a>
+    {% endif %}
+  </form>
+  <div class="hint" style="display:block;margin-top:4px">
+    同名存档会被覆盖——就等于"更新这个存档"。存档文件保存在
+    <span class="mono">{{ dir_name }}/</span> 目录下，是一份普通 SQL 文本，可以直接打开看、也可以手动导入。
+  </div>
+</div>
+{% endif %}
+
+<div class="card">
+  <h2>已有存档 <span class="count-info">共 {{ snaps|length }} 份</span></h2>
+  {% if snaps %}
+  <table>
+    <thead>
+      <tr>
+        <th style="width:220px">存档名称</th>
+        <th style="width:160px">创建时间</th>
+        <th style="width:110px">创建人</th>
+        <th style="width:100px">数据行数</th>
+        <th style="width:90px">文件大小</th>
+        <th class="th-ops">操作</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for s in snaps %}
+      <tr>
+        <td>
+          {% if s.is_baseline %}<span class="tag tag-ok">基准</span> {% endif %}
+          <b>{{ s.name }}</b>
+        </td>
+        <td class="mono">{{ s.created }}</td>
+        <td>{{ s.operator }}</td>
+        <td>{{ s.rows }} 行</td>
+        <td class="mono">{{ '%.0f'|format(s.size / 1024) }} KB</td>
+        <td class="ops">
+          {% if can('backup.manage') %}
+          <form class="inline-form" method="post" action="{{ url_for('backup_restore') }}"
+                onsubmit="return confirm('确定恢复到这个存档吗？\n\n当前数据库里所有数据都会被这份存档覆盖，包括你后来新加和修改的内容。');">
+            <input type="hidden" name="name" value="{{ s.name }}">
+            <button class="btn-mini btn-mini-ok" type="submit">恢复到此存档</button>
+          </form>
+          <form class="inline-form" method="post" action="{{ url_for('backup_create') }}">
+            <input type="hidden" name="name" value="{{ s.name }}">
+            <button class="btn-mini" type="submit" title="用当前数据覆盖这份存档">用当前数据覆盖</button>
+          </form>
+          <form class="inline-form" method="post" action="{{ url_for('backup_delete') }}"
+                onsubmit="return confirm('删除存档「{{ s.name }}」？文件会被删掉，无法找回。');">
+            <input type="hidden" name="name" value="{{ s.name }}">
+            <button class="btn-mini btn-mini-danger" type="submit">删除</button>
+          </form>
+          {% else %}
+          <span class="sub">无权限</span>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <div class="empty">还没有任何存档，先在上面新建一份吧</div>
+  {% endif %}
+</div>
+
+<div class="card">
+  <h2>当前数据库 <span class="count-info">合计 {{ total }} 行</span></h2>
+  <div class="grid-2">
+    <table>
+      <thead><tr><th>表</th><th style="width:90px">行数</th></tr></thead>
+      <tbody>
+        {% for name, cnt in counts.items() %}
+          {% if loop.index <= 8 %}
+          <tr><td class="mono">{{ name }}</td><td>{{ cnt }}</td></tr>
+          {% endif %}
+        {% endfor %}
+      </tbody>
+    </table>
+    <table>
+      <thead><tr><th>表</th><th style="width:90px">行数</th></tr></thead>
+      <tbody>
+        {% for name, cnt in counts.items() %}
+          {% if loop.index > 8 %}
+          <tr><td class="mono">{{ name }}</td><td>{{ cnt }}</td></tr>
+          {% endif %}
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,213 @@
+{% extends "base.html" %}
+{% block title %}挂号管理 | 医院信息管理系统{% endblock %}
+
+{% block content %}
+<h1 class="page-title">挂号管理</h1>
+
+<div class="filters">
+  <span class="filter-label">科室</span>
+  <a class="btn-plain {% if not current_dept %}active{% endif %}"
+     href="{{ url_for('registrations', status=current_status, vtype=current_vtype, kw=kw) }}">全部</a>
+  {% for d in depts %}
+    <a class="btn-plain {% if current_dept == d.dept_id %}active{% endif %}"
+       href="{{ url_for('registrations', dept_id=d.dept_id, status=current_status, vtype=current_vtype, kw=kw) }}">{{ d.dept_name }}</a>
+  {% endfor %}
+</div>
+
+<div class="filters">
+  <span class="filter-label">状态</span>
+  <a class="btn-plain {% if not current_status %}active{% endif %}"
+     href="{{ url_for('registrations', dept_id=current_dept, vtype=current_vtype, kw=kw) }}">全部</a>
+  {% for s in ['已挂号', '已就诊', '已收费', '已发药', '已退费', '已取消'] %}
+    <a class="btn-plain {% if current_status == s %}active{% endif %}"
+       href="{{ url_for('registrations', dept_id=current_dept, status=s, vtype=current_vtype, kw=kw) }}">
+      {{ '待就诊' if s == '已挂号' else s }} {{ status_counts.get(s, 0) }}
+    </a>
+  {% endfor %}
+</div>
+
+<div class="filters">
+  <span class="filter-label">类型</span>
+  <a class="btn-plain {% if not current_vtype %}active{% endif %}"
+     href="{{ url_for('registrations', dept_id=current_dept, status=current_status, kw=kw) }}">全部</a>
+  {% for t in ['初诊', '复诊'] %}
+    <a class="btn-plain {% if current_vtype == t %}active{% endif %}"
+       href="{{ url_for('registrations', dept_id=current_dept, status=current_status, vtype=t, kw=kw) }}">
+      {{ t }} {{ type_counts.get(t, 0) }}
+    </a>
+  {% endfor %}
+</div>
+
+<div class="toolbar">
+  <form class="search-form" method="get" action="{{ url_for('registrations') }}">
+    {% if current_dept %}<input type="hidden" name="dept_id" value="{{ current_dept }}">{% endif %}
+    {% if current_status %}<input type="hidden" name="status" value="{{ current_status }}">{% endif %}
+    {% if current_vtype %}<input type="hidden" name="vtype" value="{{ current_vtype }}">{% endif %}
+    <input type="text" name="kw" value="{{ kw }}" placeholder="搜索患者姓名或医生姓名">
+    <button class="btn" type="submit">搜索</button>
+    {% if kw or current_dept or current_status or current_vtype %}
+      <a class="btn-plain" href="{{ url_for('registrations') }}">重置全部筛选</a>
+    {% endif %}
+  </form>
+  <div class="auto-refresh"></div>
+  <div class="count-info">
+    共 <b>{{ total }}</b> 条记录，第 {{ page }} / {{ total_pages }} 页
+    <a class="btn-mini btn-mini-export" href="{{ export_url }}">导出 Excel</a>
+  </div>
+</div>
+
+<div class="card">
+  {% if rows %}
+  <table>
+    <thead>
+      <tr>
+        <th>编号</th><th>患者</th><th>联系电话</th><th>医生 / 科室</th>
+        <th>类型</th><th>挂号时间</th><th>就诊时段</th><th>挂号费</th>
+        <th>状态</th><th class="th-ops">操作</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for r in rows %}
+      <tr class="{% if highlight and r.reg_id == highlight %}row-focus{% endif %}">
+        <td>{{ r.reg_id }}</td>
+        <td>
+          <a class="link" href="{{ url_for('patient_detail', pid=r.patient_id) }}">{{ r.patient_name }}</a>
+          <span class="sub">{{ r.gender }}{% if r.age is not none %} · {{ r.age }}岁{% endif %}</span>
+        </td>
+        <td class="mono">{{ r.phone_mask }}</td>
+        <td>
+          {{ r.doctor_name }}<span class="sub">{{ r.title or '' }}</span>
+          <span class="sub sub-block">{{ r.dept_name }}</span>
+        </td>
+        <td>
+          <span class="tag tag-type-{{ r.visit_type }}">{{ r.visit_type }}</span>
+          {% if r.parent_reg_id %}<span class="sub">#{{ r.parent_reg_id }}</span>{% endif %}
+        </td>
+        <td>{{ r.reg_date.strftime('%Y-%m-%d %H:%M') if r.reg_date else '' }}</td>
+        <td>
+          {% if r.work_date %}
+            <span class="sub sub-block">{{ r.work_date }}</span>
+            <span class="tag tag-{{ r.time_period }}">{{ r.time_period }}</span>
+            {% if r.queue_no %}<span class="tag tag-queue">第 {{ r.queue_no }} 号</span>{% endif %}
+            {% if r.called_time %}<span class="tag tag-ok">已叫号</span>{% endif %}
+          {% else %}<span class="sub">—</span>{% endif %}
+        </td>
+        <td>￥{{ '%.2f'|format(r.reg_fee) }}</td>
+        <td>
+          <span class="tag tag-{{ r.reg_status }}">{{ r.reg_status }}</span>
+          {% if r.med_cnt %}<span class="sub sub-block">处方 {{ r.med_cnt }} 种</span>{% endif %}
+        </td>
+        <td class="ops">
+          {% if r.reg_status == '已挂号' %}
+            {% if can('queue.call') and not r.called_time %}
+            <form class="inline-form" method="post"
+                  action="{{ url_for('queue_call', rid=r.reg_id) }}">
+              <input type="hidden" name="back" value="{{ request.full_path.rstrip('?') }}">
+              <button class="btn-mini btn-mini-queue" type="submit">叫号</button>
+            </form>
+            {% endif %}
+            {% if can('reg.visit') %}
+            <a class="btn-mini btn-mini-ok" href="{{ url_for('visit', reg_id=r.reg_id) }}">接诊开方</a>
+            {% endif %}
+            {% if can('reg.cancel') %}
+            <form class="inline-form" method="post"
+                  action="{{ url_for('change_reg_status', rid=r.reg_id) }}"
+                  onsubmit="return confirm('确定取消这条挂号吗？取消后不能恢复，占用的号源会释放。');">
+              <input type="hidden" name="status" value="已取消">
+              <input type="hidden" name="back" value="{{ request.full_path.rstrip('?') }}">
+              <button class="btn-mini btn-mini-danger" type="submit">取消挂号</button>
+            </form>
+            {% endif %}
+          {% elif r.reg_status == '已就诊' %}
+            {% if can('charge.do') %}
+            <a class="btn-mini btn-mini-money" href="{{ url_for('charge_page', reg_id=r.reg_id) }}">收费</a>
+            {% elif can('charge.view') %}
+            <a class="btn-mini" href="{{ url_for('charge_page', reg_id=r.reg_id) }}">查看费用</a>
+            {% endif %}
+            {% if can('reg.add') %}
+            <a class="btn-mini"
+               href="{{ url_for('add', patient_id=r.patient_id, dept_id=r.dept_id,
+                                doctor_id=r.doctor_id, visit_type='复诊',
+                                parent_reg_id=r.reg_id) }}">复诊挂号</a>
+            {% endif %}
+          {% elif r.reg_status == '已收费' %}
+            {% if can('dispense.do') %}
+            <form class="inline-form" method="post"
+                  action="{{ url_for('dispense', reg_id=r.reg_id) }}"
+                  onsubmit="return confirm('确认把这副药发给患者吗？发药后挂号状态变为「已发药」。');">
+              <input type="hidden" name="back" value="{{ request.full_path.rstrip('?') }}">
+              <button class="btn-mini btn-mini-dispense" type="submit">发药</button>
+            </form>
+            {% endif %}
+            {% if can('charge.view') %}
+            <a class="btn-mini" href="{{ url_for('charge_page', reg_id=r.reg_id) }}">收费单</a>
+            <a class="btn-mini btn-mini-plain" href="{{ url_for('print_charge', reg_id=r.reg_id) }}"
+               target="_blank">收据</a>
+            {% endif %}
+            {% if can('reg.add') %}
+            <a class="btn-mini"
+               href="{{ url_for('add', patient_id=r.patient_id, dept_id=r.dept_id,
+                                doctor_id=r.doctor_id, visit_type='复诊',
+                                parent_reg_id=r.reg_id) }}">复诊挂号</a>
+            {% endif %}
+          {% elif r.reg_status == '已发药' %}
+            {% if can('charge.view') %}
+            <a class="btn-mini" href="{{ url_for('charge_page', reg_id=r.reg_id) }}">收费单</a>
+            <a class="btn-mini btn-mini-plain" href="{{ url_for('print_charge', reg_id=r.reg_id) }}"
+               target="_blank">收据</a>
+            {% endif %}
+            {% if can('reg.add') %}
+            <a class="btn-mini"
+               href="{{ url_for('add', patient_id=r.patient_id, dept_id=r.dept_id,
+                                doctor_id=r.doctor_id, visit_type='复诊',
+                                parent_reg_id=r.reg_id) }}">复诊挂号</a>
+            {% endif %}
+          {% elif r.reg_status == '已退费' %}
+            {% if can('charge.view') %}
+            <a class="btn-mini" href="{{ url_for('charge_page', reg_id=r.reg_id) }}">退费详情</a>
+            {% endif %}
+            {% if can('reg.add') %}
+            <a class="btn-mini"
+               href="{{ url_for('add', patient_id=r.patient_id, dept_id=r.dept_id,
+                                doctor_id=r.doctor_id, visit_type='初诊') }}">重新挂号</a>
+            {% endif %}
+          {% else %}
+            {% if can('reg.add') %}
+            <a class="btn-mini"
+               href="{{ url_for('add', patient_id=r.patient_id, dept_id=r.dept_id,
+                                doctor_id=r.doctor_id, visit_type='初诊') }}">重新挂号</a>
+            {% endif %}
+          {% endif %}
+          {% if can('print') %}
+          <a class="btn-mini btn-mini-plain" href="{{ url_for('print_registration', rid=r.reg_id) }}"
+             target="_blank">打印</a>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+    <div class="empty">没有符合条件的挂号记录</div>
+  {% endif %}
+</div>
+
+{% if total_pages > 1 %}
+<div class="pager">
+  {% if prev_url %}
+    <a class="btn-plain" href="{{ prev_url }}">上一页</a>
+  {% endif %}
+  {% for p, url in pager %}
+    <a class="btn-plain {% if p == page %}active{% endif %}" href="{{ url }}">{{ p }}</a>
+  {% endfor %}
+  {% if next_url %}
+    <a class="btn-plain" href="{{ next_url }}">下一页</a>
+  {% endif %}
+</div>
+{% endif %}
+
+<script>
+  const fresh = document.querySelector('tr.row-focus');
+  if (fresh) { fresh.scrollIntoView({ block: 'center', behavior: 'smooth' }); }
+</script>
+{% endblock %}

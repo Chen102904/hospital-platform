@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>住院单 {{ adm.admission_no }} | 医院信息管理系统</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; padding: 28px 16px; background: #F0F3F0;
+      font-family: "Microsoft YaHei", "PingFang SC", -apple-system, sans-serif;
+      color: #21302A;
+    }
+    .sheet {
+      width: 720px; max-width: 100%; margin: 0 auto; background: #fff;
+      border-radius: 6px; padding: 30px 34px 26px;
+      box-shadow: 0 6px 24px rgba(20,50,40,.10);
+    }
+    .head { text-align: center; border-bottom: 2px solid #2D6A4F; padding-bottom: 14px; }
+    .head h1 { margin: 0 0 6px; font-size: 22px; letter-spacing: 4px; color: #1B4332; }
+    .head .en { font-size: 11px; letter-spacing: 2px; color: #7C8C84; text-transform: uppercase; }
+    .head .doc-type { display: inline-block; margin-top: 10px; padding: 3px 16px;
+      background: #2D6A4F; color: #fff; border-radius: 12px; font-size: 13px; letter-spacing: 2px; }
+    .no-row { display: flex; justify-content: space-between; align-items: flex-end;
+      margin: 16px 0 12px; font-size: 13px; color: #4C5A52; }
+    .no-row .big { font-size: 20px; font-weight: 700; color: #1B4332; font-family: Consolas, monospace; }
+    .stamp { display: inline-block; padding: 2px 10px; border-radius: 10px; font-size: 12px;
+      background: #E3F2E9; color: #2D6A4F; }
+    .stamp-out { background: #F2F2F2; color: #777; }
+    table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+    td { border: 1px solid #DCE5DF; padding: 9px 12px; }
+    td.k { width: 96px; background: #F6F9F7; color: #4C5A52; }
+    .foot { display: flex; justify-content: space-between; margin-top: 18px;
+      font-size: 12px; color: #7C8C84; }
+    .tip { margin-top: 16px; padding: 10px 12px; background: #F6F9F7; border-left: 3px solid #2D6A4F;
+      font-size: 12px; color: #5C6B63; line-height: 1.7; }
+    .actions { width: 720px; max-width: 100%; margin: 18px auto 0; text-align: center; }
+    .actions button, .actions a {
+      display: inline-block; margin: 0 6px; padding: 9px 22px; border-radius: 6px;
+      border: 1px solid #2D6A4F; background: #2D6A4F; color: #fff; font-size: 14px;
+      cursor: pointer; text-decoration: none;
+    }
+    .actions a { background: #fff; color: #2D6A4F; }
+    @media print {
+      body { background: #fff; padding: 0; }
+      .sheet { box-shadow: none; border-radius: 0; width: 100%; padding: 0; }
+      .actions { display: none; }
+      @page { margin: 14mm; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="sheet">
+  <div class="head">
+    <h1>长兴医院</h1>
+    <div class="en">Inpatient Admission Record</div>
+    <div class="doc-type">住 院 单</div>
+  </div>
+
+  <div class="no-row">
+    <div>住院号：<span class="big">{{ adm.admission_no }}</span></div>
+    <div>
+      <span class="stamp {% if adm.status != '在院' %}stamp-out{% endif %}">
+        {% if adm.status == '在院' %}在院中{% else %}已出院{% endif %}
+      </span><br>
+      打印时间：{{ now.strftime('%Y-%m-%d %H:%M') }}
+    </div>
+  </div>
+
+  <table>
+    <tr>
+      <td class="k">患者姓名</td><td>{{ adm.patient_name }}</td>
+      <td class="k">性别</td><td>{{ adm.gender }}</td>
+      <td class="k">年龄</td>
+      <td>{% if adm.age is not none %}{{ adm.age }} 岁{% else %}—{% endif %}</td>
+    </tr>
+    <tr>
+      <td class="k">联系电话</td><td colspan="3">{{ adm.phone or '—' }}</td>
+      <td class="k">患者编号</td><td>{{ adm.patient_id }}</td>
+    </tr>
+    <tr>
+      <td class="k">住院科室</td><td colspan="3">{{ adm.dept_name }}</td>
+      <td class="k">床位号</td><td>{{ adm.bed_no or '—' }}</td>
+    </tr>
+    <tr>
+      <td class="k">主治医生</td>
+      <td colspan="3">{{ adm.doctor_name }}{% if adm.title %}（{{ adm.title }}）{% endif %}</td>
+      <td class="k">住院天数</td><td>{{ days }} 天</td>
+    </tr>
+    <tr>
+      <td class="k">入院时间</td>
+      <td colspan="3">{{ adm.admit_time.strftime('%Y-%m-%d %H:%M') if adm.admit_time else '—' }}</td>
+      <td class="k">入院经办人</td><td>{{ adm.admit_operator or '—' }}</td>
+    </tr>
+    <tr>
+      <td class="k">入院诊断</td>
+      <td colspan="5">{{ adm.admit_diagnosis or '—' }}</td>
+    </tr>
+    {% if adm.discharge_time %}
+    <tr>
+      <td class="k">出院时间</td>
+      <td colspan="3">{{ adm.discharge_time.strftime('%Y-%m-%d %H:%M') }}</td>
+      <td class="k">出院经办人</td><td>{{ adm.discharge_operator or '—' }}</td>
+    </tr>
+    <tr>
+      <td class="k">出院小结</td>
+      <td colspan="5">{{ adm.discharge_summary or '—' }}</td>
+    </tr>
+    {% endif %}
+    {% if adm.remark %}
+    <tr>
+      <td class="k">备注</td>
+      <td colspan="5">{{ adm.remark }}</td>
+    </tr>
+    {% endif %}
+  </table>
+
+  {% if adm.status == '在院' %}
+  <div class="tip">
+    请持本住院单前往 <b>{{ adm.dept_name }}</b> 住院部办理入住手续，
+    床位以住院部实际安排为准。<br>
+    本单据为系统生成，仅作演示用途。
+  </div>
+  {% else %}
+  <div class="tip">
+    本次住院已于 <b>{{ adm.discharge_time.strftime('%Y-%m-%d %H:%M') }}</b> 办理出院，
+    共住院 <b>{{ days }}</b> 天，床位已释放。<br>
+    本单据为系统生成，仅作演示用途。
+  </div>
+  {% endif %}
+
+  <div class="foot">
+    <span>医院信息管理系统 · 演示单据</span>
+    <span>{{ adm.admission_no }}</span>
+  </div>
+</div>
+
+<div class="actions">
+  <button onclick="window.print()">打印</button>
+  <a href="javascript:window.close()">关闭</a>
+</div>
+
+</body>
+</html>

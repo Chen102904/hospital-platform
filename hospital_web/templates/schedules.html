@@ -1,0 +1,152 @@
+{% extends "base.html" %}
+{% block title %}排班号源 | 医院信息管理系统{% endblock %}
+
+{% block content %}
+<h1 class="page-title">排班号源管理</h1>
+
+<div class="toolbar">
+  <form class="search-form" method="get" action="{{ url_for('schedules') }}">
+    <label class="filter-label">出诊日期</label>
+    <input type="date" name="work_date" value="{{ current_date }}">
+    {% if current_dept %}<input type="hidden" name="dept_id" value="{{ current_dept }}">{% endif %}
+    {% if current_status %}<input type="hidden" name="status" value="{{ current_status }}">{% endif %}
+    <button class="btn" type="submit">查看</button>
+    <a class="btn-plain" href="{{ url_for('schedules', work_date=current_date) }}">回到今天</a>
+  </form>
+  <div class="auto-refresh"></div>
+  <div class="count-info">
+    {% if can('schedule.manage') %}号源调整 / 停诊都在这一页{% else %}仅查看{% endif %}
+  </div>
+</div>
+
+<div class="filters">
+  <span class="filter-label">科室</span>
+  <a class="btn-plain {% if not current_dept %}active{% endif %}"
+     href="{{ url_for('schedules', work_date=current_date, status=current_status) }}">全部</a>
+  {% for d in depts %}
+    <a class="btn-plain {% if current_dept == d.dept_id %}active{% endif %}"
+       href="{{ url_for('schedules', work_date=current_date, dept_id=d.dept_id, status=current_status) }}">{{ d.dept_name }}</a>
+  {% endfor %}
+</div>
+
+<div class="filters">
+  <span class="filter-label">状态</span>
+  <a class="btn-plain {% if not current_status %}active{% endif %}"
+     href="{{ url_for('schedules', work_date=current_date, dept_id=current_dept) }}">全部</a>
+  {% for s in schedule_statuses %}
+    <a class="btn-plain {% if current_status == s %}active{% endif %}"
+       href="{{ url_for('schedules', work_date=current_date, dept_id=current_dept, status=s) }}">{{ s }}</a>
+  {% endfor %}
+</div>
+
+<div class="stats">
+  <div class="stat"><div class="label">班次数</div><div class="value">{{ summary.cnt }}</div></div>
+  <div class="stat"><div class="label">放号总数</div><div class="value">{{ summary.quota }}</div></div>
+  <div class="stat"><div class="label">已挂出</div><div class="value">{{ summary.booked }}</div></div>
+  <div class="stat">
+    <div class="label">剩余号源</div>
+    <div class="value {% if summary.left == 0 %}value-warn{% endif %}">{{ summary.left }}</div>
+  </div>
+  <div class="stat">
+    <div class="label">停诊班次</div>
+    <div class="value {% if summary.stopped %}value-warn{% endif %}">{{ summary.stopped }}</div>
+  </div>
+</div>
+
+<div class="card">
+  <h2>{{ current_date }} 各医生号源</h2>
+  {% if rows %}
+  <table>
+    <thead>
+      <tr>
+        <th>科室</th><th>医生</th><th>时段</th><th>号源</th><th>已挂</th>
+        <th>剩余</th><th>占用率</th><th>状态</th><th class="th-ops">操作</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for r in rows %}
+      <tr class="{% if r.status == '停诊' %}row-muted{% endif %}">
+        <td>{{ r.dept_name or '—' }}</td>
+        <td>{{ r.doctor_name }}<span class="sub">{{ r.title or '' }}</span></td>
+        <td><span class="tag tag-{{ r.time_period }}">{{ r.time_period }}</span></td>
+        <td>{{ r.total_quota }}</td>
+        <td>{{ r.booked_count }}</td>
+        <td>
+          {% if r.left == 0 %}<span class="tag tag-danger">已满</span>
+          {% elif r.left < 5 %}<span class="tag tag-warn">剩 {{ r.left }}</span>
+          {% else %}剩 {{ r.left }}{% endif %}
+        </td>
+        <td class="sched-bar-cell">
+          <div class="sched-bar"><i style="width: {{ r.rate }}%"></i></div>
+          <span class="sub">{{ r.rate }}%</span>
+        </td>
+        <td>
+          <span class="tag {% if r.status == '正常' %}tag-ok{% else %}tag-danger{% endif %}">{{ r.status }}</span>
+        </td>
+        <td class="ops">
+          {% if can('schedule.manage') %}
+          <form class="inline-form" method="post"
+                action="{{ url_for('schedule_toggle', sid=r.schedule_id) }}">
+            <input type="hidden" name="back" value="{{ request.full_path.rstrip('?') }}">
+            <button class="btn-mini {% if r.status == '正常' %}btn-mini-danger{% else %}btn-mini-ok{% endif %}"
+                    type="submit">{{ '停诊' if r.status == '正常' else '恢复出诊' }}</button>
+          </form>
+          <form class="inline-form sched-quota-form" method="post"
+                action="{{ url_for('schedule_quota', sid=r.schedule_id) }}">
+            <input type="hidden" name="back" value="{{ request.full_path.rstrip('?') }}">
+            <input type="number" name="total_quota" min="{{ r.booked_count if r.booked_count > 0 else 1 }}"
+                   max="200" value="{{ r.total_quota }}" class="sched-quota-input">
+            <button class="btn-mini btn-mini-plain" type="submit">改号源</button>
+          </form>
+          {% else %}<span class="sub">—</span>{% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+    <div class="empty">这一天没有排班记录</div>
+  {% endif %}
+</div>
+
+{% if can('schedule.manage') %}
+<div class="card">
+  <h2>新增排班</h2>
+  <p class="hint">同一位医生、同一天、同一时段只能有一条排班（数据库唯一约束）；重复添加会被拦下来。</p>
+  <form method="post" action="{{ url_for('schedule_add') }}">
+    <input type="hidden" name="back" value="{{ request.full_path.rstrip('?') }}">
+    <div class="field-grid">
+      <div class="form-row">
+        <label>医生 <span class="req">*</span></label>
+        <select name="doctor_id" required>
+          <option value="">请选择医生</option>
+          {% for d in docs %}
+            <option value="{{ d.doctor_id }}">{{ d.doctor_name }}（{{ d.dept_name or '未分科' }} · {{ d.title or '医师' }}）</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="form-row">
+        <label>出诊日期 <span class="req">*</span></label>
+        <input type="date" name="work_date" value="{{ current_date }}" min="{{ today }}" required>
+      </div>
+      <div class="form-row">
+        <label>时段 <span class="req">*</span></label>
+        <div class="radio-group">
+          {% for p in time_periods %}
+          <label class="radio">
+            <input type="radio" name="time_period" value="{{ p }}"
+                   {% if loop.first %}checked{% endif %}> <span>{{ p }}</span>
+          </label>
+          {% endfor %}
+        </div>
+      </div>
+      <div class="form-row">
+        <label>放号数 <span class="req">*</span></label>
+        <input type="number" name="total_quota" min="1" max="200" value="30" required>
+      </div>
+    </div>
+    <button class="btn" type="submit">添加排班</button>
+  </form>
+</div>
+{% endif %}
+{% endblock %}

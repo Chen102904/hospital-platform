@@ -1,0 +1,24 @@
+# 有密钥的文件，绝对不能提交
+mykey.py
+db_ro.py
+
+# 运行产物
+__pycache__/
+*.pyc
+_cache/
+_*.log
+_preview.html
+_page.html
+
+# 第 10 步：聊天记录是自己的，不进仓库
+10_product/_data/
+
+# 闯关器每次运行的完整日志（自己留着排错，别进仓库）
+drill_logs/
+
+# 手工调试临时文件
+ck.txt
+page*.html
+hist.html
+sse*.txt
+exp.md

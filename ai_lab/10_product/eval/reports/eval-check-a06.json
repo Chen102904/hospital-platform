@@ -1,0 +1,109 @@
+{
+  "summary": {
+    "n": 2,
+    "passed": 2,
+    "acc": 100.0,
+    "tokens": 5793,
+    "elapsed": 14.8,
+    "abnormal": 0,
+    "abnormal_ids": [],
+    "refuse_n": 0,
+    "refuse_ok": 0,
+    "refuse_rate": null,
+    "false_refusal": 0,
+    "nodata_n": 0,
+    "nodata_ok": 0,
+    "tool_n": 2,
+    "tool_ok": 2,
+    "tool_rate": 100.0,
+    "cite_n": 0,
+    "cite_ok": 0,
+    "cite_rate": null,
+    "by_cat": {
+      "查库·收入": {
+        "n": 2,
+        "ok": 2
+      }
+    }
+  },
+  "results": [
+    {
+      "id": "A02",
+      "cat": "查库·收入",
+      "q": "近 30 天收入排名前三的科室分别是多少？",
+      "pass": true,
+      "why": "全部断言命中",
+      "flags": {},
+      "answer": "近 30 天收入排名前三的科室是：\n\n1. **内科**，收入 1159.40 元，开了 9 张收费单\n2. **儿科**，收入 1134.00 元，开了 8 张收费单\n3. **心血管内科**，收入 910.90 元，开了 6 张收费单\n\n内科和儿科收入差不多，心血管内科稍微拉开了一点差距。",
+      "status": "ok",
+      "tools": [
+        "dept_revenue_rank"
+      ],
+      "want_tools": [
+        "dept_revenue_rank"
+      ],
+      "tool_hit": true,
+      "missing_tools": [],
+      "elapsed": 7.3,
+      "tokens": 2904,
+      "rounds": 2,
+      "expect_refuse": false,
+      "expect_no_data": false,
+      "cited": null,
+      "why_case": "要求把三行结果都读出来并对应上，测的是'读表格'而不是'抄第一行'。"
+    },
+    {
+      "id": "A06",
+      "cat": "查库·收入",
+      "q": "内科近 30 天开了多少张收费单？",
+      "pass": true,
+      "why": "全部断言命中",
+      "flags": {},
+      "answer": "内科近30天开了9张收费单，收入1159.40元。",
+      "status": "ok",
+      "tools": [
+        "dept_revenue_rank"
+      ],
+      "want_tools": [
+        "dept_revenue_rank"
+      ],
+      "tool_hit": true,
+      "missing_tools": [],
+      "elapsed": 7.5,
+      "tokens": 2889,
+      "rounds": 2,
+      "expect_refuse": false,
+      "expect_no_data": false,
+      "cited": null,
+      "why_case": "工具返回的是'收费单数'列，不是金额。测它有没有读对列而不是拿错列。"
+    }
+  ],
+  "truth": {
+    "TOP1_AMT": 1159.4,
+    "TOP2_AMT": 1134.0,
+    "TOP3_AMT": 910.9,
+    "TOP4_AMT": 863.7,
+    "TOP5_AMT": 633.8,
+    "LAST_AMT": 47.8,
+    "LAST_DEPT": "耳鼻喉科",
+    "N_DEPT_30": 11,
+    "INNER_CNT": 9,
+    "STOCK_MIN_NAME": "地塞米松磷酸钠注射液",
+    "STOCK_MIN_QTY": 45,
+    "STOCK_MAX_NAME": "葡萄糖注射液",
+    "STOCK_MAX_QTY": 720,
+    "LOW50_QTY": 45,
+    "IBU_QTY": 480,
+    "N_TABLE": 15,
+    "N_DEPT_60": 12,
+    "_DAYS": 30
+  },
+  "meta": {
+    "when": "2026-10-23 16:29:32",
+    "model": "qwen3.7-plus",
+    "version": 1,
+    "tag": "check-a06",
+    "chunks": 63,
+    "wall": 14.776231050491333
+  }
+}

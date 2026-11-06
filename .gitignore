@@ -1,0 +1,58 @@
+# ---------- 不进本仓库（独立仓库或过程文件） ----------
+diabetes_project/
+_个人文档备份/
+.workbuddy/
+_shot/
+_dryad/
+_dryad.json
+_charls_doc/
+_nhanes_probe/
+
+# ---------- 简历与投递材料（个人隐私，不外发） ----------
+简历*
+陈嘉岩*
+*面试*
+*投递*
+求职方向*
+宁波*
+岗位技能*
+互联网岗位*
+计算机岗位*
+make_resume_pdf.py
+photo.jpg
+_build_resume*
+_fs.html
+_nbsdc.html
+练习题答案.sql
+两个项目详解.*
+
+# ---------- 子仓库备份（合并前的 .git，不进版本库） ----------
+.git_bak/
+
+# ---------- 密钥与本地配置（真实凭证，绝不入库） ----------
+config_local.py
+mykey.py
+db_ro.py
+*.pem
+*.key.env
+
+# ---------- Python ----------
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.venv/
+venv/
+
+# ---------- 运行产物 ----------
+*.log
+*.db
+*.sqlite3
+.coverage
+htmlcov/
+
+# ---------- 编辑器与系统 ----------
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

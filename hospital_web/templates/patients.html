@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+{% block title %}患者管理 | 医院信息管理系统{% endblock %}
+
+{% block content %}
+<h1 class="page-title">患者管理</h1>
+
+<div class="toolbar">
+  <form class="search-form" method="get" action="{{ url_for('patients') }}">
+    <input type="text" name="kw" value="{{ kw }}" placeholder="搜索患者姓名或手机号">
+    <button class="btn" type="submit">搜索</button>
+    {% if kw %}<a class="btn-plain" href="{{ url_for('patients') }}">重置</a>{% endif %}
+  </form>
+  <div class="auto-refresh"></div>
+  <div class="count-info">
+    共 <b>{{ total }}</b> 位患者，第 {{ page }} / {{ total_pages }} 页
+    <a class="btn-mini btn-mini-export" href="{{ export_url }}">导出 Excel</a>
+  </div>
+</div>
+
+<div class="card">
+  {% if rows %}
+  <table>
+    <thead>
+      <tr>
+        <th>编号</th><th>姓名</th><th>性别</th><th>年龄</th>
+        <th>联系电话</th><th>身份证号</th><th>累计挂号</th><th>待就诊</th><th>最近挂号</th>
+        <th class="th-ops">操作</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for r in rows %}
+      <tr>
+        <td>{{ r.patient_id }}</td>
+        <td><a class="link" href="{{ url_for('patient_detail', pid=r.patient_id) }}">{{ r.patient_name }}</a></td>
+        <td>{{ r.gender }}</td>
+        <td>{% if r.age is not none %}{{ r.age }}{% else %}<span class="sub">—</span>{% endif %}</td>
+        <td class="mono">{{ r.phone_mask }}</td>
+        <td class="mono sub">{{ r.id_card_mask }}</td>
+        <td>
+          <b>{{ r.reg_cnt }}</b> 次
+          {% if r.visited_cnt %}<span class="sub">已就诊 {{ r.visited_cnt }}</span>{% endif %}
+        </td>
+        <td>
+          {% if r.waiting_cnt %}
+            <span class="tag tag-已挂号">{{ r.waiting_cnt }}</span>
+          {% else %}
+            <span class="sub">—</span>
+          {% endif %}
+        </td>
+        <td>{{ r.last_reg.strftime('%Y-%m-%d') if r.last_reg else '—' }}</td>
+        <td class="ops">
+          <a class="btn-mini" href="{{ url_for('patient_detail', pid=r.patient_id) }}">档案</a>
+          {% if can('patient.edit') %}
+          <a class="btn-mini btn-mini-plain" href="{{ url_for('patient_edit', pid=r.patient_id) }}">改档</a>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+    <div class="empty">没有找到符合条件的患者</div>
+  {% endif %}
+</div>
+
+{% if total_pages > 1 %}
+<div class="pager">
+  {% if page > 1 %}
+    <a class="btn-plain" href="{{ url_for('patients', kw=kw, page=page-1) }}">上一页</a>
+  {% endif %}
+  {% for p, url in pager %}
+    <a class="btn-plain {% if p == page %}active{% endif %}" href="{{ url }}">{{ p }}</a>
+  {% endfor %}
+  {% if page < total_pages %}
+    <a class="btn-plain" href="{{ url_for('patients', kw=kw, page=page+1) }}">下一页</a>
+  {% endif %}
+</div>
+{% endif %}
+{% endblock %}

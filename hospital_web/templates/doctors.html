@@ -1,0 +1,171 @@
+{% extends "base.html" %}
+{% block title %}医生管理 | 医院信息管理系统{% endblock %}
+
+{% block content %}
+<h1 class="page-title">医生管理
+  <span class="page-sub">医生档案的来源。离职只改状态不删记录：历史病历与挂号完整保留，只是不再出现在新增挂号的下拉里</span>
+</h1>
+
+<div class="stats">
+  <div class="stat"><div class="label">医生总数</div><div class="value">{{ summary.total }}</div></div>
+  <div class="stat"><div class="label">在职</div><div class="value">{{ summary.on }}</div></div>
+  <div class="stat">
+    <div class="label">已离职</div>
+    <div class="value {% if summary.off %}value-warn{% endif %}">{{ summary.off }}</div>
+  </div>
+  <div class="stat"><div class="label">当前筛选出</div><div class="value">{{ summary.shown }}</div></div>
+</div>
+
+<div class="filters">
+  <span class="filter-label">在职状态</span>
+  <a class="btn-plain {% if not current_status %}active{% endif %}"
+     href="{{ url_for('doctors', kw=kw, dept_id=current_dept) }}">全部 {{ summary.total }}</a>
+  <a class="btn-plain {% if current_status == '在职' %}active{% endif %}"
+     href="{{ url_for('doctors', kw=kw, dept_id=current_dept, status='在职') }}">在职 {{ summary.on }}</a>
+  <a class="btn-plain {% if current_status == '离职' %}active{% endif %}"
+     href="{{ url_for('doctors', kw=kw, dept_id=current_dept, status='离职') }}">离职 {{ summary.off }}</a>
+</div>
+
+<div class="filters">
+  <span class="filter-label">科室</span>
+  <a class="btn-plain {% if not current_dept %}active{% endif %}"
+     href="{{ url_for('doctors', kw=kw, status=current_status) }}">全部科室</a>
+  {% for d in depts %}
+  <a class="btn-plain {% if current_dept == d.dept_id %}active{% endif %}"
+     href="{{ url_for('doctors', kw=kw, status=current_status, dept_id=d.dept_id) }}">{{ d.dept_name }}{% if d.status != '启用' %}·停用{% endif %}</a>
+  {% endfor %}
+</div>
+
+<div class="toolbar">
+  <form class="search-form" method="get" action="{{ url_for('doctors') }}">
+    {% if current_status %}<input type="hidden" name="status" value="{{ current_status }}">{% endif %}
+    {% if current_dept %}<input type="hidden" name="dept_id" value="{{ current_dept }}">{% endif %}
+    <input type="text" name="kw" value="{{ kw }}" placeholder="搜索姓名 / 擅长领域 / 电话">
+    <button class="btn" type="submit">搜索</button>
+    {% if kw or current_status or current_dept %}<a class="btn-plain" href="{{ url_for('doctors') }}">重置</a>{% endif %}
+  </form>
+  <div class="count-info">
+    共 <b>{{ rows|length }}</b> 名医生
+    <details class="pop-box">
+      <summary class="btn-mini btn-mini-ok">＋ 新增医生</summary>
+      <form class="pop-form" method="post" action="{{ url_for('doctor_save') }}">
+        <input type="hidden" name="doctor_id" value="0">
+        <label>姓名 <span class="req">*</span></label>
+        <input type="text" name="doctor_name" maxlength="30" required placeholder="如：李文博">
+        <label>性别 <span class="req">*</span></label>
+        <select name="gender" required>
+          <option value="男">男</option>
+          <option value="女">女</option>
+        </select>
+        <label>职称</label>
+        <select name="title">
+          <option value="">（未填写）</option>
+          {% for t in titles %}<option value="{{ t }}">{{ t }}</option>{% endfor %}
+        </select>
+        <label>所属科室</label>
+        <select name="dept_id">
+          <option value="">（未分配）</option>
+          {% for d in depts %}
+          <option value="{{ d.dept_id }}">{{ d.dept_name }}{% if d.status != '启用' %}（已停用）{% endif %}</option>
+          {% endfor %}
+        </select>
+        <label>擅长领域</label>
+        <input type="text" name="specialty" maxlength="100" placeholder="如：冠心病、心力衰竭诊治">
+        <label>联系电话</label>
+        <input type="text" name="phone" maxlength="20" placeholder="11 位手机号">
+        <button class="btn-mini btn-mini-ok" type="submit">保存</button>
+      </form>
+    </details>
+  </div>
+</div>
+
+<div class="card">
+  {% if rows %}
+  <table>
+    <thead>
+      <tr>
+        <th>编号</th><th>姓名</th><th>性别</th><th>职称</th><th>科室</th>
+        <th>擅长领域</th><th>电话</th><th>接诊量</th><th>状态</th><th class="th-ops">操作</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for r in rows %}
+      <tr class="{% if r.status != '在职' %}row-muted{% endif %}">
+        <td>{{ r.doctor_id }}</td>
+        <td>{{ r.doctor_name }}</td>
+        <td>{{ r.gender }}</td>
+        <td class="sub">{{ r.title or '—' }}</td>
+        <td>
+          {{ r.dept_name or '未分配' }}
+          {% if r.dept_status and r.dept_status != '启用' %}
+          <span class="cell-note">该科室已停用</span>
+          {% endif %}
+        </td>
+        <td class="sub wrap-cell">{{ r.specialty or '—' }}</td>
+        <td class="mono sub">{{ r.phone or '—' }}</td>
+        <td>
+          挂号 {{ r.reg_cnt }}
+          <span class="cell-note">病历 {{ r.rec_cnt }} 份{% if r.future_sched %} · 未来排班 {{ r.future_sched }} 个{% endif %}</span>
+        </td>
+        <td>
+          {% if r.status == '在职' %}<span class="tag tag-ok">在职</span>
+          {% else %}<span class="tag tag-cancel">离职</span>{% endif %}
+        </td>
+        <td class="ops">
+          <details class="pop-box">
+            <summary class="btn-mini btn-mini-plain">编辑</summary>
+            <form class="pop-form" method="post" action="{{ url_for('doctor_save') }}">
+              <input type="hidden" name="doctor_id" value="{{ r.doctor_id }}">
+              <label>姓名 <span class="req">*</span></label>
+              <input type="text" name="doctor_name" maxlength="30" required value="{{ r.doctor_name }}">
+              <label>性别 <span class="req">*</span></label>
+              <select name="gender" required>
+                <option value="男" {% if r.gender == '男' %}selected{% endif %}>男</option>
+                <option value="女" {% if r.gender == '女' %}selected{% endif %}>女</option>
+              </select>
+              <label>职称</label>
+              <select name="title">
+                <option value="">（未填写）</option>
+                {% for t in titles %}
+                <option value="{{ t }}" {% if r.title == t %}selected{% endif %}>{{ t }}</option>
+                {% endfor %}
+              </select>
+              <label>所属科室</label>
+              <select name="dept_id">
+                <option value="">（未分配）</option>
+                {% for d in depts %}
+                <option value="{{ d.dept_id }}" {% if r.dept_id == d.dept_id %}selected{% endif %}>{{ d.dept_name }}{% if d.status != '启用' %}（已停用）{% endif %}</option>
+                {% endfor %}
+              </select>
+              <label>擅长领域</label>
+              <input type="text" name="specialty" maxlength="100" value="{{ r.specialty or '' }}">
+              <label>联系电话</label>
+              <input type="text" name="phone" maxlength="20" value="{{ r.phone or '' }}">
+              <button class="btn-mini btn-mini-ok" type="submit">保存</button>
+            </form>
+          </details>
+          <form class="inline-form" method="post" action="{{ url_for('doctor_toggle', did=r.doctor_id) }}">
+            {% if r.status == '在职' %}
+            <button class="btn-mini btn-mini-danger" type="submit">离职</button>
+            {% else %}
+            <button class="btn-mini btn-mini-ok" type="submit">复职</button>
+            {% endif %}
+          </form>
+          <a class="btn-mini btn-mini-plain"
+             href="{{ url_for('schedules', dept_id=r.dept_id) }}">排班</a>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <div class="empty">没有符合条件的医生</div>
+  {% endif %}
+</div>
+
+<div class="hint" style="display:block;margin-top:14px">
+  新增医生后，还要到「排班号源」给他放号，患者才挂得到他——
+  挂号只认"医生 × 日期 × 时段"的号源，不是认医生本人。
+  离职同理只影响新增，历史记录一律保留。
+</div>
+{% endblock %}

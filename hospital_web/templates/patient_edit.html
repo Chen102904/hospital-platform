@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% block title %}修改 {{ info.patient_name }} 的档案 | 医院信息管理系统{% endblock %}
+
+{% block content %}
+{% set fname  = form.get('new_name') if form else info.patient_name %}
+{% set fgender = form.get('new_gender') if form else info.gender %}
+{% set fbirth = form.get('new_birth_date') if form else (info.birth_date or '') %}
+{% set fid    = form.get('new_id_card') if form else (info.id_card or '') %}
+{% set fphone = form.get('new_phone') if form else (info.phone or '') %}
+{% set faddr  = form.get('new_address') if form else (info.address or '') %}
+
+<h1 class="page-title">
+  <a class="link" href="{{ url_for('patients') }}">患者管理</a>
+  <span class="sub">/ </span>
+  <a class="link" href="{{ url_for('patient_detail', pid=info.patient_id) }}">{{ info.patient_name }}</a>
+  <span class="sub">/ 修改档案</span>
+</h1>
+
+<div class="card">
+  <h2>更正患者基本信息</h2>
+  <p class="hint">
+    患者编号 <b>{{ info.patient_id }}</b>。建档时填错的姓名、电话、住址都可以在这里改；
+    身份证号在系统内唯一，改成别人已用的号码会被拦下。
+  </p>
+
+  <form method="post" action="{{ url_for('patient_edit', pid=info.patient_id) }}">
+    <div class="field-grid">
+      <div class="form-row">
+        <label>姓名 <span class="req">*</span></label>
+        <input type="text" name="new_name" maxlength="30" required value="{{ fname }}">
+      </div>
+      <div class="form-row">
+        <label>性别 <span class="req">*</span></label>
+        <div class="radio-group">
+          <label class="radio">
+            <input type="radio" name="new_gender" value="男" {% if fgender != '女' %}checked{% endif %}>
+            <span>男</span>
+          </label>
+          <label class="radio">
+            <input type="radio" name="new_gender" value="女" {% if fgender == '女' %}checked{% endif %}>
+            <span>女</span>
+          </label>
+        </div>
+      </div>
+      <div class="form-row">
+        <label>出生日期</label>
+        <input type="date" name="new_birth_date" value="{{ fbirth }}">
+      </div>
+      <div class="form-row">
+        <label>联系电话</label>
+        <input type="text" name="new_phone" maxlength="20" placeholder="11 位手机号" value="{{ fphone }}">
+      </div>
+      <div class="form-row">
+        <label>身份证号</label>
+        <input type="text" name="new_id_card" maxlength="18" placeholder="18 位，末位可为 X" value="{{ fid }}">
+      </div>
+      <div class="form-row">
+        <label>家庭住址</label>
+        <input type="text" name="new_address" maxlength="200" value="{{ faddr }}">
+      </div>
+    </div>
+    <div class="form-actions">
+      <button class="btn" type="submit">保存修改</button>
+      <a class="btn-plain" href="{{ url_for('patient_detail', pid=info.patient_id) }}">放弃并返回</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

@@ -1,0 +1,184 @@
+{% extends "base.html" %}
+{% block title %}候诊叫号 | 医院信息管理系统{% endblock %}
+
+{% block content %}
+<h1 class="page-title">候诊叫号</h1>
+
+<div class="toolbar">
+  <form class="search-form" method="get" action="{{ url_for('queue') }}">
+    <label class="filter-label">就诊日期</label>
+    <input type="date" name="work_date" value="{{ current_date }}">
+    {% if current_dept %}<input type="hidden" name="dept_id" value="{{ current_dept }}">{% endif %}
+    {% if current_period %}<input type="hidden" name="period" value="{{ current_period }}">{% endif %}
+    <button class="btn" type="submit">查看</button>
+  </form>
+  <div class="auto-refresh"></div>
+  <div class="count-info">
+    候诊 <b>{{ waiting }}</b> 人 · 已叫号 {{ called }} 人
+  </div>
+</div>
+
+<div class="filters">
+  <span class="filter-label">时段</span>
+  <a class="btn-plain {% if not current_period %}active{% endif %}"
+     href="{{ url_for('queue', work_date=current_date, dept_id=current_dept) }}">全部</a>
+  {% for p in time_periods %}
+    <a class="btn-plain {% if current_period == p %}active{% endif %}"
+       href="{{ url_for('queue', work_date=current_date, dept_id=current_dept, period=p) }}">{{ p }}</a>
+  {% endfor %}
+</div>
+
+<div class="filters">
+  <span class="filter-label">科室</span>
+  <a class="btn-plain {% if not current_dept %}active{% endif %}"
+     href="{{ url_for('queue', work_date=current_date, period=current_period) }}">全部</a>
+  {% for d in depts %}
+    <a class="btn-plain {% if current_dept == d.dept_id %}active{% endif %}"
+       href="{{ url_for('queue', work_date=current_date, dept_id=d.dept_id, period=current_period) }}">{{ d.dept_name }}</a>
+  {% endfor %}
+</div>
+
+{% if groups %}
+  {% for g in groups %}
+  <div class="card queue-card">
+    <div class="queue-head">
+      <div>
+        <span class="queue-doctor">{{ g.doctor_name }}</span>
+        <span class="sub">{{ g.title }} · {{ g.dept_name }}</span>
+      </div>
+      <div class="queue-head-right">
+        <span class="sub">共 {{ g.rows|length }} 人待接诊</span>
+        {% if g.next_id %}
+          <span class="tag tag-queue">下一位：{{ g.next_no }} 号</span>
+        {% else %}
+          <span class="tag tag-ok">本组已全部叫过号</span>
+        {% endif %}
+      </div>
+    </div>
+    <table>
+      <thead>
+        <tr><th style="width:80px">候诊号</th><th>患者</th><th>类型</th>
+            <th>时段</th><th>叫号时间</th><th class="th-ops">操作</th></tr>
+      </thead>
+      <tbody>
+        {% for r in g.rows %}
+        <tr class="{% if r.reg_id == g.next_id %}row-next{% endif %}">
+          <td><span class="queue-no">{{ r.queue_no }}</span></td>
+          <td>
+            <a class="link" href="{{ url_for('patient_detail', pid=r.patient_id) }}">{{ r.patient_name }}</a>
+            <span class="sub">{{ r.gender }}{% if r.age is not none %} · {{ r.age }}岁{% endif %}</span>
+            <span class="sub">挂号 #{{ r.reg_id }}</span>
+          </td>
+          <td>
+            <span class="tag tag-type-{{ r.visit_type }}">{{ r.visit_type }}</span>
+            {% if r.parent_reg_id %}<span class="sub">#{{ r.parent_reg_id }}</span>{% endif %}
+          </td>
+          <td><span class="tag tag-{{ r.time_period }}">{{ r.time_period }}</span></td>
+          <td class="mono">
+            {% if r.called_time %}{{ r.called_time.strftime('%H:%M') }}
+              {% if r.reg_id == g.next_id %}<span class="tag tag-queue">下一位</span>{% endif %}
+            {% else %}<span class="sub">—</span>{% endif %}
+          </td>
+          <td class="ops">
+            {% if can('queue.call') %}
+            <form class="inline-form" method="post" action="{{ url_for('queue_call', rid=r.reg_id) }}">
+              <input type="hidden" name="back" value="{{ request.full_path.rstrip('?') }}">
+              <button class="btn-mini btn-mini-queue" type="submit">
+                {{ '再叫一次' if r.called_time else '叫号' }}</button>
+            </form>
+            {% endif %}
+            {% if can('reg.visit') %}
+            <a class="btn-mini btn-mini-ok" href="{{ url_for('visit', reg_id=r.reg_id) }}">进入接诊</a>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endfor %}
+{% else %}
+<div class="card">
+  <div class="empty">这一天（所选时段）没有候诊的患者</div>
+</div>
+{% endif %}
+
+{# ---------------- 叫号弹窗 ----------------
+   叫号（POST）之后会带着 ?called=<挂号号> 跳回本页，这里据此把患者"喊"出来。
+   做成整屏大字号而不是顶部提示条，是因为叫号本来就是给走廊里的人看的。
+   加了语音播报，浏览器不支持或用户关掉就静默跳过。 #}
+{% if called_info %}
+<div class="call-modal" id="callModal"
+     data-text="请 {{ called_info.queue_no }} 号 {{ called_info.patient_name }}，到{{ called_info.dept_name }}{{ called_info.doctor_name }}医生处就诊">
+  <div class="call-card">
+    <div class="call-strip">正 在 叫 号</div>
+    <div class="call-no">{{ called_info.queue_no }}<span class="call-no-unit">号</span></div>
+    <div class="call-name">{{ called_info.patient_name }}</div>
+    <div class="call-sub">
+      {{ called_info.gender }}{% if called_info.age is not none %} · {{ called_info.age }}岁{% endif %}
+      · {{ called_info.visit_type }} · {{ called_info.time_period }}
+    </div>
+    <div class="call-dest">
+      <b>{{ called_info.dept_name }}</b> · {{ called_info.doctor_name }}
+      <span class="sub">{{ called_info.title or '' }}</span>
+    </div>
+    {# 路由那边已经把"没叫过号"的挡掉了，这里再兜一道，
+       免得以后有人从别的入口传一个 called_time 为空的 called_info 进来，又把页面打崩。 #}
+    {% if called_info.called_time %}
+    <div class="call-time">叫号时间 {{ called_info.called_time.strftime('%H:%M:%S') }}</div>
+    {% endif %}
+    <div class="call-actions">
+      <form class="inline-form" method="post"
+            action="{{ url_for('queue_call', rid=called_info.reg_id) }}">
+        <input type="hidden" name="back" value="{{ back_url }}">
+        <button class="btn-mini btn-mini-queue" type="submit">再叫一次</button>
+      </form>
+      {% if can('reg.visit') %}
+      <a class="btn-mini btn-mini-ok" href="{{ url_for('visit', reg_id=called_info.reg_id) }}">进入接诊</a>
+      {% endif %}
+      <button class="btn-mini" type="button" id="callMute">关闭声音</button>
+      <button class="btn-mini" type="button" id="callClose">关闭窗口</button>
+    </div>
+  </div>
+</div>
+<script>
+(function () {
+  var modal = document.getElementById('callModal');
+  if (!modal) return;
+
+  // 顶部那条 flash 和弹窗说的是同一件事，去掉别重复
+  document.querySelectorAll('.flash').forEach(function (el) { el.remove(); });
+
+  function close() { modal.remove(); }
+  document.getElementById('callClose').addEventListener('click', close);
+  modal.addEventListener('click', function (e) { if (e.target === modal) close(); });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
+
+  // ---- 语音播报 ----
+  var muteBtn = document.getElementById('callMute');
+  var muted = localStorage.getItem('his.call.mute') === '1';
+
+  function syncBtn() { muteBtn.textContent = muted ? '开启声音' : '关闭声音'; }
+  function speak() {
+    if (muted || !window.speechSynthesis) return;
+    var u = new SpeechSynthesisUtterance(modal.dataset.text);
+    u.lang = 'zh-CN';
+    u.rate = 0.95;
+    window.speechSynthesis.cancel();      // 连点多次时不要叠着念
+    window.speechSynthesis.speak(u);
+  }
+
+  syncBtn();
+  muteBtn.addEventListener('click', function () {
+    muted = !muted;
+    localStorage.setItem('his.call.mute', muted ? '1' : '0');
+    syncBtn();
+    if (muted) { if (window.speechSynthesis) window.speechSynthesis.cancel(); }
+    else { speak(); }
+  });
+
+  speak();
+})();
+</script>
+{% endif %}
+{% endblock %}

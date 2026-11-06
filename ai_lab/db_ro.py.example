@@ -1,0 +1,21 @@
+# -*- coding: utf-8 -*-
+# 复刻这个文件为 db_ro.py，填上你自己的**只读**账号。
+# db_ro.py 不进 git（已写进 .gitignore）。
+#
+# 只读账号怎么建（用 root 连上去执行这三句）：
+#
+#   CREATE USER IF NOT EXISTS 'his_ro'@'localhost' IDENTIFIED BY '你的密码';
+#   GRANT SELECT ON hospital_db.* TO 'his_ro'@'localhost';
+#   FLUSH PRIVILEGES;
+#
+# ⚠️ 千万不要图省事直接给 root 账号。
+#    root 一旦落到 Agent 手里，模型抽错参数、或者被提示词注入骗了，就是真删库。
+
+DB_RO = {
+    "host": "localhost",
+    "port": 3306,
+    "user": "his_ro",          # 只读账号
+    "password": "",            # ← 填你设的密码
+    "database": "hospital_db",
+    "charset": "utf8mb4",
+}

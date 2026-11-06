@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}找不到这个会话 · HIS 智能助手{% endblock %}
+
+{% block body %}
+<div class="topbar">
+  <button class="menu-btn" id="menuBtn" aria-label="打开侧栏">☰</button>
+  <div><div class="ht">找不到这个会话</div></div>
+</div>
+<div class="notfound">
+  <div>
+    <div class="big">404</div>
+    <p>这个会话可能已经被删掉了，或者链接里的 id 不对。</p>
+    <a href="/new">开一个新对话</a>
+    <span style="color:#d3dce4;margin:0 10px">|</span>
+    <a href="/history">看看全部记录</a>
+  </div>
+</div>
+{% endblock %}

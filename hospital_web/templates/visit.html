@@ -1,0 +1,185 @@
+{% extends "base.html" %}
+{% block title %}接诊开方 | 医院信息管理系统{% endblock %}
+
+{% block content %}
+<h1 class="page-title">接诊开方 <span class="page-sub">挂号编号 #{{ reg.reg_id }}</span></h1>
+
+<div class="grid-2 visit-head">
+  <div class="card">
+    <h2>患者信息</h2>
+    <div class="info-grid">
+      <div class="info-item"><span class="k">姓名</span>
+        <span class="v"><a class="link" href="{{ url_for('patient_detail', pid=reg.patient_id) }}">{{ reg.patient_name }}</a></span>
+      </div>
+      <div class="info-item"><span class="k">性别</span><span class="v">{{ reg.gender }}</span></div>
+      <div class="info-item"><span class="k">年龄</span>
+        <span class="v">{% if reg.age is not none %}{{ reg.age }} 岁{% else %}—{% endif %}</span>
+      </div>
+      <div class="info-item"><span class="k">联系电话</span><span class="v mono">{{ reg.phone or '—' }}</span></div>
+      <div class="info-item"><span class="k">出生日期</span>
+        <span class="v">{{ reg.birth_date.strftime('%Y-%m-%d') if reg.birth_date else '—' }}</span>
+      </div>
+      <div class="info-item"><span class="k">患者编号</span><span class="v">{{ reg.patient_id }}</span></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>本次挂号</h2>
+    <div class="info-grid">
+      <div class="info-item"><span class="k">就诊科室</span><span class="v">{{ reg.dept_name }}</span></div>
+      <div class="info-item"><span class="k">接诊医生</span>
+        <span class="v">{{ reg.doctor_name }}<span class="sub">{{ reg.title or '' }}</span></span>
+      </div>
+      <div class="info-item"><span class="k">挂号时间</span>
+        <span class="v">{{ reg.reg_date.strftime('%Y-%m-%d %H:%M') if reg.reg_date else '—' }}</span>
+      </div>
+      <div class="info-item"><span class="k">就诊类型</span>
+        <span class="v"><span class="tag tag-type-{{ reg.visit_type }}">{{ reg.visit_type }}</span></span>
+      </div>
+      <div class="info-item"><span class="k">挂号费</span><span class="v">￥{{ '%.2f'|format(reg.reg_fee) }}</span></div>
+      <div class="info-item"><span class="k">当前状态</span>
+        <span class="v"><span class="tag tag-{{ reg.reg_status }}">{{ reg.reg_status }}</span></span>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% if reg.reg_status != '已挂号' %}
+  <div class="notice notice-warn">
+    该挂号当前状态为「{{ reg.reg_status }}」，不能重复接诊。
+    <a class="link" href="{{ url_for('registrations') }}">返回挂号管理</a>
+  </div>
+{% else %}
+
+{% if exist_record %}
+  <div class="notice">
+    这条挂号已有病历 #{{ exist_record.record_id }}（诊断：{{ exist_record.diagnosis }}）。
+    正常流程下不该重复接诊，请确认后再操作。
+  </div>
+{% endif %}
+
+<form method="post" id="visit-form">
+  <div class="card">
+    <h2>诊断</h2>
+    <div class="form-row">
+      <label for="diagnosis">诊断结果 <span class="req">*</span></label>
+      <input type="text" id="diagnosis" name="diagnosis" maxlength="200" required
+             value="{{ form.get('diagnosis', '') if form else '' }}"
+             placeholder="如：上呼吸道感染">
+    </div>
+    <div class="form-row">
+      <label for="remark">医嘱 / 备注</label>
+      <input type="text" id="remark" name="remark" maxlength="200"
+             value="{{ form.get('remark', '') if form else '' }}"
+             placeholder="如：多饮水、注意休息，一周后复诊">
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>处方 <span class="hint">开药会自动扣减药品库存；不开药可直接提交，仅记录病历</span></h2>
+
+    <table class="rx-table">
+      <thead>
+        <tr>
+          <th class="rx-col-med">药品</th>
+          <th class="rx-col-qty">数量</th>
+          <th class="rx-col-use">用法用量</th>
+          <th class="rx-col-info">库存 / 单价</th>
+          <th class="rx-col-op"></th>
+        </tr>
+      </thead>
+      <tbody id="rx-body"></tbody>
+    </table>
+
+    <datalist id="usage-list">
+      <option value="口服，每日3次"></option>
+      <option value="口服，每日2次"></option>
+      <option value="口服，每日1次"></option>
+      <option value="口服，每晚1次"></option>
+      <option value="静脉滴注，每日1次"></option>
+      <option value="肌内注射，每日2次"></option>
+      <option value="外用，每日2次"></option>
+    </datalist>
+
+    <div class="rx-foot">
+      <button type="button" class="btn-plain" onclick="addRow()">＋ 添加药品</button>
+      <div class="rx-summary">处方金额合计：<b id="rx-total">￥0.00</b></div>
+    </div>
+  </div>
+
+  <div class="form-actions">
+    <button class="btn" type="submit">完成接诊并扣减库存</button>
+    <a class="btn-plain" href="{{ url_for('registrations') }}">取消返回</a>
+  </div>
+</form>
+
+<script>
+(function () {
+  var MEDS = {{ medicines_json | safe }};
+  var PREFILL = {{ (rx_rows or []) | tojson }};
+  var MED_MAP = {};
+  MEDS.forEach(function (m) { MED_MAP[String(m.medicine_id)] = m; });
+
+  var body = document.getElementById('rx-body');
+
+  function optionsHtml(selected) {
+    var html = '<option value="0">— 请选择药品 —</option>';
+    MEDS.forEach(function (m) {
+      var sel = String(m.medicine_id) === String(selected) ? ' selected' : '';
+      html += '<option value="' + m.medicine_id + '"' + sel + '>' +
+              m.medicine_name + '（' + (m.spec || '') + '）</option>';
+    });
+    return html;
+  }
+
+  window.addRow = function (selected, qty, dosage) {
+    var tr = document.createElement('tr');
+    tr.innerHTML =
+      '<td><select name="medicine_id" onchange="onMedChange(this)">' + optionsHtml(selected) + '</select></td>' +
+      '<td><input type="number" name="quantity" min="1" step="1" value="' + (qty || 1) + '" oninput="calcTotal()"></td>' +
+      '<td><input type="text" name="dosage" list="usage-list" placeholder="用法用量" value="' +
+          (dosage || '').replace(/"/g, '&quot;') + '"></td>' +
+      '<td class="rx-info"></td>' +
+      '<td><button type="button" class="btn-mini btn-mini-danger" onclick="removeRow(this)">删除</button></td>';
+    body.appendChild(tr);
+    onMedChange(tr.querySelector('select'));
+  };
+
+  window.removeRow = function (btn) {
+    var tr = btn.closest('tr');
+    tr.parentNode.removeChild(tr);
+    if (!body.children.length) addRow();
+    calcTotal();
+  };
+
+  window.onMedChange = function (sel) {
+    var tr = sel.closest('tr');
+    var info = tr.querySelector('.rx-info');
+    var m = MED_MAP[sel.value];
+    if (!m) { info.innerHTML = '<span class="sub">—</span>'; calcTotal(); return; }
+    var cls = m.level === 'danger' ? 'danger' : (m.level === 'warn' ? 'warn' : 'ok');
+    info.innerHTML = '<span class="tag tag-' + cls + '">库存 ' + m.stock + (m.unit || '') + '</span>' +
+                     '<span class="sub">￥' + Number(m.price).toFixed(2) + '</span>';
+    calcTotal();
+  };
+
+  window.calcTotal = function () {
+    var total = 0;
+    body.querySelectorAll('tr').forEach(function (tr) {
+      var sel = tr.querySelector('select');
+      var qty = parseInt(tr.querySelector('input[name="quantity"]').value, 10) || 0;
+      var m = MED_MAP[sel.value];
+      if (m) total += Number(m.price) * qty;
+    });
+    document.getElementById('rx-total').textContent = '￥' + total.toFixed(2);
+  };
+
+  if (PREFILL.length) {
+    PREFILL.forEach(function (r) { addRow(r.medicine_id, r.quantity, r.dosage); });
+  } else {
+    addRow();
+  }
+})();
+</script>
+{% endif %}
+{% endblock %}
