@@ -1,6 +1,6 @@
 # 医院信息管理系统 - Web 前端（Flask）
 
-在 [医院信息管理系统 · 数据库设计](https://github.com/Chen102904/hospital-db-design) 的基础上，加了一层 Web 界面，实现"浏览器里操作真实数据库"。
+在 [医院信息管理系统 · 数据库设计](../hospital_db_project/) 的基础上，加了一层 Web 界面，实现"浏览器里操作真实数据库"。
 门诊主链路是一条**完整闭环**：**排班放号 → 挂号（占号源、领候诊号）→ 候诊叫号 → 接诊开方 → 收费 →
 药房发药 →（退费时退款 + 退药 + 发药记录置为已退回）**，不是静态页面拼数据。
 
@@ -298,7 +298,7 @@ hospital_web/
    ```
    （这个文件已被 `.gitignore` 排除、不会提交；也可以改用环境变量 `DB_PASSWORD`，见 `config.py` 注释）
 
-3. 确认 MySQL 里已经有 `hospital_db`（先跑 [hospital-db-design](https://github.com/Chen102904/hospital-db-design)
+3. 确认 MySQL 里已经有 `hospital_db`（先跑 [hospital_db_project](../hospital_db_project/)
    里的 `01_create_tables.sql`；想要饱满的演示数据就跑那边的 `python seed_demo_data.py`，它会自动补表补字段）
 4. 测试连接：
    ```
