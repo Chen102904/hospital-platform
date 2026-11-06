@@ -5,5 +5,5 @@
 # 只需要写要覆盖的字段，其余走 db_conf.py 里的默认值。
 
 DB = {
-    "password": "",     # ← 填你自己的 MySQL root 密码
+    "password": "CHANGE_ME",     # ← 换成你自己的 MySQL root 密码
 }

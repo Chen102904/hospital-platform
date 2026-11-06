@@ -4,7 +4,7 @@
 # 只需要写要覆盖的字段，其余（host/port/user/database）走 config.py 里的默认值。
 
 DB_CONFIG = {
-    "password": "",     # ← 填你自己的 MySQL root 密码
+    "password": "CHANGE_ME",     # ← 换成你自己的 MySQL root 密码
 }
 
 # 也可以改别的字段，比如 MySQL 不在本机：

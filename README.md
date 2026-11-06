@@ -57,7 +57,7 @@ cd hospital_web
 docker compose up
 ```
 
-容器里的数据库密码走环境变量，默认 `his_dev_only`（仅供本地开发）。要用自己的密码就复制 `.env.example` 为 `.env` 改一行。
+容器里的数据库密码走环境变量，默认 `CHANGE_ME`（仅供本地开发）。要用自己的密码就复制 `.env.example` 为 `.env` 改一行。
 
 ### 跑运营归因 Agent
 
